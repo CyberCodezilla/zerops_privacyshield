@@ -8,15 +8,7 @@ zerops:
         - node generate-icons.js
         - node create-zip.js
       deployFiles:
-        - index.js
-        - package.json
-        - package-lock.json
-        - public
-        - create-zip.js
-        - generate-icons.js
-        - create-logos.js
-        - apps
-        - node_modules
+        - .
     run:
       base: nodejs@22
       ports:
