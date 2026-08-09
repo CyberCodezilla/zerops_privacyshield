@@ -48,6 +48,15 @@
     'div[contenteditable="true"]'
   ];
 
+  const SEND_BUTTON_SELECTORS = [
+    'button[data-testid="send-button"]',
+    'button[aria-label*="Send"]',
+    'button[aria-label*="Submit"]',
+    'button.send-button',
+    'button[type="submit"]',
+    'form button'
+  ];
+
   let shieldBadge = null;
   let redactionCount = 0;
   let activeModal = null;
@@ -57,6 +66,7 @@
     createFloatingBadge();
     observeDOM();
     attachInputListeners();
+    attachGlobalListeners();
     attachImageOCRListeners();
   }
 
@@ -141,13 +151,15 @@
   }
 
   function getElementText(el) {
+    if (!el) return '';
     if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
-      return el.value;
+      return el.value || '';
     }
-    return el.innerText || el.textContent;
+    return el.innerText || el.textContent || '';
   }
 
   function setElementText(el, newText) {
+    if (!el) return;
     if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
       el.value = newText;
       el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -156,6 +168,16 @@
       el.innerText = newText;
       el.dispatchEvent(new Event('input', { bubbles: true }));
     }
+  }
+
+  function findActiveInput() {
+    for (const selector of AI_INPUT_SELECTORS) {
+      const el = document.querySelector(selector);
+      if (el && (document.activeElement === el || el.contains(document.activeElement) || getElementText(el).trim().length > 0)) {
+        return el;
+      }
+    }
+    return document.querySelector('textarea, div[contenteditable="true"]');
   }
 
   function showThreatWarningModal(targetElement, rawText, sanitizedText, detectedTokens, onConfirmRedact, onBypass) {
@@ -276,6 +298,42 @@
         });
       });
     });
+  }
+
+  function attachGlobalListeners() {
+    // Intercept Click on Send/Submit Buttons
+    document.addEventListener('click', (e) => {
+      if (!config.enabled || !config.autoRedactOnSubmit) return;
+      const target = e.target.closest('button, [role="button"]');
+      if (!target) return;
+
+      const isSendButton = SEND_BUTTON_SELECTORS.some(sel => target.matches(sel)) || 
+                           target.getAttribute('aria-label')?.toLowerCase().includes('send') ||
+                           target.getAttribute('data-testid')?.includes('send');
+
+      if (isSendButton) {
+        const inputEl = findActiveInput();
+        if (inputEl) {
+          const text = getElementText(inputEl);
+          const { sanitized, count, detectedTokens } = redactTextLocally(text);
+
+          if (count > 0) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            showThreatWarningModal(inputEl, text, sanitized, detectedTokens,
+              () => {
+                setElementText(inputEl, sanitized);
+                logTransactionToBackend(text, count);
+              },
+              () => {
+                setElementText(inputEl, text);
+              }
+            );
+          }
+        }
+      }
+    }, true);
   }
 
   function logTransactionToBackend(text, count) {
