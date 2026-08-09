@@ -1,0 +1,39 @@
+zerops:
+  # 1. API Proxy Gateway Service
+  - setup: app
+    build:
+      base: nodejs@22
+      buildCommands:
+        - npm install
+      deployFiles:
+        - .
+    run:
+      base: nodejs@22
+      ports:
+        - port: 3000
+          httpSupport: true
+      start: node index.js
+      envVariables:
+        NER_SERVICE_URL: http://nerengine:8000
+
+  # 2. Python GLiNER ML Microservice Configuration Reference
+  - setup: nerengine
+    build:
+      base: python@3.11
+      buildCommands:
+        - python -m venv venv
+        - . venv/bin/activate
+        - pip install --no-cache-dir -r apps/ner-service/requirements.txt
+      deployFiles:
+        - apps/ner-service
+        - venv
+      cache:
+        - ~/.cache/pip
+    run:
+      base: python@3.11
+      ports:
+        - port: 8000
+          httpSupport: true
+      start: |
+        . venv/bin/activate
+        python -m uvicorn apps.ner-service.main:app --host 0.0.0.0 --port 8000

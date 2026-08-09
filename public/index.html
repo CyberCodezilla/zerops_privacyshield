@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PRIVACY SHIELD — Zero-Trust Payload Sanitizer & Native Reasoning Gateway</title>
+  <meta name="description" content="Enterprise Zero-Trust Payload Sanitizer & Native Language Reasoning Gateway (Hindi, Marathi, English) powering real-time PII anonymization and credentials redaction on Zerops.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Scan lines overlay for high-tech cyber aesthetic -->
+  <div class="scanlines"></div>
+
+  <div class="app-container">
+    <!-- Security Telemetry Bar -->
+    <div class="telemetry-bar">
+      <div class="telemetry-item">
+        <span class="led-indicator active"></span>
+        <span class="telemetry-label">ZERO-TRUST PROXY:</span>
+        <span class="telemetry-val text-emerald">ACTIVE</span>
+      </div>
+      <div class="telemetry-divider">|</div>
+      <div class="telemetry-item">
+        <span class="telemetry-label">LANGUAGE ENGINE:</span>
+        <span class="telemetry-val text-cyan" id="telemetryLangBadge">EN / HI / MR ACTIVE</span>
+      </div>
+      <div class="telemetry-divider">|</div>
+      <div class="telemetry-item">
+        <span class="telemetry-label">TIER-2 GLINER:</span>
+        <span class="telemetry-val text-indigo">RUNNING</span>
+      </div>
+      <div class="telemetry-divider">|</div>
+      <div class="telemetry-item">
+        <span class="telemetry-label">LATENCY:</span>
+        <span class="telemetry-val text-amber" id="telemetryLatency">0.4 ms</span>
+      </div>
+      <div class="telemetry-divider">|</div>
+      <div class="telemetry-item">
+        <span class="telemetry-label">GATEWAY PORT:</span>
+        <span class="telemetry-val">3000/TCP</span>
+      </div>
+    </div>
+
+    <!-- Main Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="logo-shield">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M12 8v4"/>
+            <path d="M12 16h.01"/>
+          </svg>
+        </div>
+        <div>
+          <h1>PRIVACY SHIELD</h1>
+          <div class="sub-brand">Zero-Trust Payload Sanitizer & Native Language Reasoning Engine • Node.js v22</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="health-badge" id="healthBadge">
+          <span class="led-pulse"></span>
+          <span id="healthStatusText">SYSTEM HEALTHY (200 OK)</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Top Metrics Overview -->
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">PROTECTION ENGINE</span>
+          <span class="badge badge-emerald">OPERATIONAL</span>
+        </div>
+        <div class="metric-value text-emerald">100.0% REJECTION</div>
+        <div class="metric-sub">Zero-Data Retention Policy Active</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">SANITIZED REQUESTS</span>
+          <svg class="metric-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+        </div>
+        <div class="metric-value text-cyan" id="statRequests">3,480</div>
+        <div class="metric-sub">Processed through Inbound Proxy</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">PII TOKENS REDACTED</span>
+          <svg class="metric-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+        </div>
+        <div class="metric-value text-purple" id="statRedactions">16,210</div>
+        <div class="metric-sub">Across 13 Active Pattern Filters</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">CULTURAL REASONING</span>
+          <svg class="metric-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+        </div>
+        <div class="metric-value text-amber">HINGLISH / MINGLISH</div>
+        <div class="metric-sub">Non-Distorted Jargon Preservation</div>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="sanitizer">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+        SANITY PLAYGROUND & INSPECTOR
+      </button>
+      <button class="tab-btn" data-tab="proxy">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+        ZERO-TRUST LLM PROXY GATEWAY
+      </button>
+      <button class="tab-btn" data-tab="ledger">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        AUDIT LEDGER & THREAT ANALYTICS
+      </button>
+      <button class="tab-btn" data-tab="rules">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        PROTECTION RULES CATALOG
+      </button>
+    </nav>
+
+    <!-- TAB 1: PII Sanitizer & Inspector -->
+    <main class="tab-content active" id="tab-sanitizer">
+      <!-- Data Pipeline Architecture Diagram Banner -->
+      <div class="pipeline-banner">
+        <div class="pipeline-step">
+          <span class="step-num">01</span>
+          <div class="step-info">
+            <span class="step-title">HYBRID LANG DETECT</span>
+            <span class="step-desc">Auto-Detect / Override</span>
+          </div>
+        </div>
+        <div class="pipeline-arrow">➔</div>
+        <div class="pipeline-step active">
+          <span class="step-num">02</span>
+          <div class="step-info">
+            <span class="step-title">ZERO-TRUST PII SHIELD</span>
+            <span class="step-desc">Priority Secret Regexes</span>
+          </div>
+        </div>
+        <div class="pipeline-arrow">➔</div>
+        <div class="pipeline-step">
+          <span class="step-num">03</span>
+          <div class="step-info">
+            <span class="step-title">CULTURAL PROMPT INJECTOR</span>
+            <span class="step-desc">Jargon Immunity</span>
+          </div>
+        </div>
+        <div class="pipeline-arrow">➔</div>
+        <div class="pipeline-step">
+          <span class="step-num">04</span>
+          <div class="step-info">
+            <span class="step-title">NATURAL REHYDRATION</span>
+            <span class="step-desc">Hinglish / Minglish Output</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Language Selector & Controls -->
+      <div class="presets-bar">
+        <div class="lang-selector-group">
+          <span class="preset-label">REASONING LANGUAGE:</span>
+          <select id="selectedLang" class="input-select-compact">
+            <option value="auto">Auto-Detect (Prompt Script)</option>
+            <option value="hi">Hindi (हिंदी / Hinglish)</option>
+            <option value="mr">Marathi (मराठी / Minglish)</option>
+            <option value="en">English (Professional)</option>
+          </select>
+        </div>
+
+        <span class="preset-label margin-left">TEST VECTORS:</span>
+        <button class="btn-preset" id="btnPresetSupport">
+          <span class="btn-dot green"></span>
+          Support Log (English)
+        </button>
+        <button class="btn-preset" id="btnPresetHindi">
+          <span class="btn-dot amber"></span>
+          Hindi (हिंदी) DB Log
+        </button>
+        <button class="btn-preset" id="btnPresetMarathi">
+          <span class="btn-dot cyan"></span>
+          Marathi (मराठी) DB Log
+        </button>
+        <button class="btn-preset" id="btnPresetKeys">
+          <span class="btn-dot purple"></span>
+          API Trace (AWS / DB URI)
+        </button>
+      </div>
+
+      <div class="editor-grid">
+        <!-- Input Panel -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title-group">
+              <span class="panel-dot"></span>
+              <h3>RAW INBOUND INPUT PAYLOAD</h3>
+            </div>
+            <span class="char-count" id="inputCharCount">0 BYTES</span>
+          </div>
+          <textarea id="inputText" placeholder="Paste un-sanitized log lines, JSON payloads, or prompt text here..." spellcheck="false"></textarea>
+          <div class="panel-footer">
+            <button class="btn btn-primary" id="btnSanitize">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              EXECUTE SANITIZATION
+            </button>
+            <button class="btn btn-ghost" id="btnClear">CLEAR INPUT</button>
+          </div>
+        </div>
+
+        <!-- Output Panel -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title-group">
+              <span class="panel-dot green"></span>
+              <h3>SANITIZED PAYLOAD & TOKEN MAP</h3>
+            </div>
+            <div class="output-meta">
+              <span class="badge badge-indigo" id="detectedLangBadge">LANG: EN</span>
+              <span class="badge badge-emerald" id="redactBadge">0 REDACTED</span>
+              <span class="badge badge-cyan" id="timeBadge">0.00 MS</span>
+            </div>
+          </div>
+          <div class="output-display" id="outputDisplay">
+            <span class="placeholder-text">Click "EXECUTE SANITIZATION" to process payload...</span>
+          </div>
+          <div class="panel-footer">
+            <button class="btn btn-secondary" id="btnCopy">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+              COPY SANITIZED PAYLOAD
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cultural Prompt Instruction Preview -->
+      <div class="card margin-top">
+        <div class="card-title-group">
+          <div>
+            <h3>DYNAMIC CULTURAL SYSTEM PROMPT INJECTOR</h3>
+            <p class="card-sub-desc">Appended to LLM context to preserve technical jargon (Hinglish/Minglish) without robotic word-for-word translation.</p>
+          </div>
+          <span class="badge badge-cyan" id="promptInjectionBadge">INSTRUCTION: READY</span>
+        </div>
+        <pre class="code-box" id="langInstructionDisplay">Select a prompt or language to view dynamic system prompt instructions...</pre>
+      </div>
+
+      <!-- Detected Entities & Confidence Map -->
+      <div class="card margin-top">
+        <div class="card-title-group">
+          <div>
+            <h3>DETECTED PII ENTITIES & CONFIDENCE MAP</h3>
+            <p class="card-sub-desc">Real-time risk scoring and replacement mapping generated by regex entropy scanners.</p>
+          </div>
+          <span class="badge badge-indigo">REAL-TIME TELEMETRY</span>
+        </div>
+        <div id="tokensMapContainer" class="token-cards-grid">
+          <span class="no-data">No PII or credential tokens detected in current buffer.</span>
+        </div>
+      </div>
+    </main>
+
+    <!-- TAB 2: Zero-Trust LLM Proxy -->
+    <section class="tab-content" id="tab-proxy">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3>ZERO-TRUST LLM & API PROXY GATEWAY</h3>
+            <p>Intercepts outbound prompts to external AI models and third-party SaaS APIs, stripping sensitive credentials prior to transmission.</p>
+          </div>
+          <div class="gateway-status-badge">
+            <span class="led-pulse"></span>
+            ZERO-DATA RETENTION GATEWAY ACTIVE
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>TARGET API DESTINATION ENDPOINT:</label>
+          <select id="proxyTarget" class="input-select">
+            <option value="OpenAI GPT-4o API Gateway">OpenAI GPT-4o API Gateway (api.openai.com)</option>
+            <option value="Anthropic Claude 3.5 Sonnet API">Anthropic Claude 3.5 Sonnet API (api.anthropic.com)</option>
+            <option value="Enterprise Vector DB Index Proxy">Enterprise Vector DB Index Proxy (qdrant.internal)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>INBOUND PROMPT CONTAINING SECRETS OR USER PII:</label>
+          <textarea id="proxyPrompt" rows="4" class="input-textarea" spellcheck="false">Database connect karte waqt timeout ho gaya hai. Password credentials postgresql://admin:P@ssw0rd123@db.internal:5432/prod and email user.support@corp.in check karein.</textarea>
+        </div>
+
+        <button class="btn btn-primary" id="btnTestProxy">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+          TRANSMIT THROUGH ZERO-TRUST GATEWAY
+        </button>
+
+        <div class="proxy-results hidden" id="proxyResults">
+          <div class="result-box">
+            <div class="box-header">
+              <span>1. SANITIZED PAYLOAD SENT TO TARGET API</span>
+              <span class="badge badge-emerald">ANONYMIZED</span>
+            </div>
+            <pre class="code-box" id="proxySanitizedText"></pre>
+          </div>
+          <div class="result-box">
+            <div class="box-header">
+              <span>2. CULTURALLY NATURAL API RESPONSE RECEIVED</span>
+              <span class="badge badge-cyan" id="proxyLangBadge">PASSTHROUGH VERIFIED</span>
+            </div>
+            <pre class="code-box green-border" id="proxyApiResponse"></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: Audit Ledger & Analytics -->
+    <section class="tab-content" id="tab-ledger">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3>TRANSACTION AUDIT LEDGER & THREAT ANALYTICS</h3>
+            <p>Immutable execution trace logging risk scores, timestamped certificates, and sanitized entity maps.</p>
+          </div>
+          <button class="btn btn-secondary" id="btnExportLedger">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            EXPORT AUDIT LEDGER (JSON)
+          </button>
+        </div>
+
+        <!-- Threat Metrics Bars -->
+        <div class="analytics-bars-grid">
+          <div class="analytics-card">
+            <div class="analytics-label">
+              <span>AVERAGE RISK SCORE REDUCTION</span>
+              <span class="text-emerald">98.4%</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill green" style="width: 98.4%;"></div>
+            </div>
+          </div>
+
+          <div class="analytics-card">
+            <div class="analytics-label">
+              <span>HIGH-CONFIDENCE REDACTIONS</span>
+              <span class="text-cyan">99.2%</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill cyan" style="width: 99.2%;"></div>
+            </div>
+          </div>
+
+          <div class="analytics-card">
+            <div class="analytics-label">
+              <span>PROXY THROUGHPUT CAPACITY</span>
+              <span class="text-indigo">12,500 REQ/SEC</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill indigo" style="width: 85%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ledger Table -->
+        <div class="table-wrapper margin-top">
+          <table class="ledger-table">
+            <thead>
+              <tr>
+                <th>TRANSACTION CERTIFICATE ID</th>
+                <th>TIMESTAMP</th>
+                <th>SOURCE IP</th>
+                <th>ENTITIES DETECTED</th>
+                <th>LANG</th>
+                <th>RISK LEVEL</th>
+                <th>RISK SCORE METER</th>
+                <th>ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="ledgerTableBody">
+              <tr>
+                <td colspan="8" class="text-center">Loading audit transactions...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: Rules Catalog -->
+    <section class="tab-content" id="tab-rules">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3>ACTIVE ENTERPRISE THREAT & PII PATTERN RULES</h3>
+            <p>In-memory pattern recognition rules running on high-density Node.js microservices.</p>
+          </div>
+          <span class="badge badge-emerald">13 ACTIVE PATTERNS</span>
+        </div>
+
+        <div class="rules-grid">
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-title">Database URIs (JDBC/Postgres)</span>
+              <span class="badge badge-crimson">CRITICAL PRIORITY</span>
+            </div>
+            <p>Runs before loose Email to prevent password @ symbol corruption.</p>
+            <code>(?:jdbc:)?(?:postgresql|postgres|mysql|mongodb|redis|oracle):\/\/[a-zA-Z0-9_]+:[^@\s]+@[a-zA-Z0-9_.-]+:\d+\/[a-zA-Z0-9_.-]+</code>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-title">Email Addresses</span>
+              <span class="badge badge-emerald">HIGH RISK</span>
+            </div>
+            <p>RFC 5322 pattern covering corporate and personal email identifiers.</p>
+            <code>\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b</code>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-title">Social Security Numbers (SSN)</span>
+              <span class="badge badge-crimson">CRITICAL RISK</span>
+            </div>
+            <p>9-digit US Social Security Numbers formatted as XXX-XX-XXXX.</p>
+            <code>\b\d{3}-\d{2}-\d{4}\b</code>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-title">Credit Card Records</span>
+              <span class="badge badge-crimson">CRITICAL RISK</span>
+            </div>
+            <p>Luhn-validated Visa, Mastercard, AMEX, and Discover numbers.</p>
+            <code>\b(?:\d[ -]*?){13,19}\b</code>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-title">AWS Access Keys</span>
+              <span class="badge badge-crimson">CRITICAL RISK</span>
+            </div>
+            <p>AWS Access Key Identifiers starting with AKIA prefix.</p>
+            <code>\bAKIA[0-9A-Z]{16}\b</code>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-title">Bearer & JWT Tokens</span>
+              <span class="badge badge-crimson">CRITICAL RISK</span>
+            </div>
+            <p>HTTP Authorization Bearer headers and signature payloads.</p>
+            <code>Bearer\s+[A-Za-z0-9\-\._~\+\/]+=*</code>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-title">IPv4 Addresses</span>
+              <span class="badge badge-amber">MEDIUM RISK</span>
+            </div>
+            <p>Public and private IPv4 address strings.</p>
+            <code>\b(?:\d{1,3}\.){3}\d{1,3}\b</code>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-title">Phone Numbers</span>
+              <span class="badge badge-amber">MEDIUM RISK</span>
+            </div>
+            <p>International and US phone number strings with optional extensions.</p>
+            <code>\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b</code>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>PRIVACY SHIELD GATEWAY • ENTERPRISE ZERO-TRUST ARCHITECTURE • DEPLOYED ON <a href="https://zerops.io" target="_blank" rel="noopener">ZEROPS</a></p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
