@@ -561,6 +561,23 @@ app.get('/api/audit-ledger', (req, res) => {
   });
 });
 
+// Kaggle Dataset ML Integration Pipeline Specification
+app.get('/api/ml/kaggle-integration', (req, res) => {
+  res.json({
+    success: true,
+    hybridArchitecture: {
+      tier1Engine: 'Sub-1ms Deterministic Regex & Shannon Entropy Scanner (RAM-based, 100% precision for Secrets)',
+      tier2Engine: 'GLiNER Zero-Shot Contextual PII Model (Fine-tunable via Kaggle Synthetic PII Datasets)',
+      recommendedKaggleDatasets: [
+        'kaggle/pii-detection-dataset-2024',
+        'kaggle/clinical-notes-phi-anonymization',
+        'kaggle/enterprise-logs-synthetic-ner'
+      ],
+      strategy: 'Use Tier 1 for zero-latency credentials/secrets redaction; fine-tune Tier 2 GLiNER on Kaggle PII for unstructured names & medical PHI.'
+    }
+  });
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
