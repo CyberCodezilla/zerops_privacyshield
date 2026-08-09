@@ -142,15 +142,23 @@ document.addEventListener('DOMContentLoaded', () => {
       const latency = (performance.now() - startTime).toFixed(1);
       const data = await res.json();
 
-      telemetryLatency.textContent = `${latency} ms`;
+      if (telemetryLatency) {
+        telemetryLatency.textContent = `${latency} ms`;
+      }
 
       if (data.status === 'healthy') {
-        healthStatusText.textContent = `SYSTEM HEALTHY (200 OK)`;
+        if (healthStatusText) {
+          healthStatusText.textContent = `SYSTEM HEALTHY (200 OK)`;
+        }
       } else {
-        healthStatusText.textContent = `SYSTEM DEGRADED`;
+        if (healthStatusText) {
+          healthStatusText.textContent = `SYSTEM DEGRADED`;
+        }
       }
     } catch (e) {
-      healthStatusText.textContent = `SYSTEM OFFLINE`;
+      if (healthStatusText) {
+        healthStatusText.textContent = `SYSTEM OFFLINE`;
+      }
     }
   }
 
@@ -159,9 +167,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('/api/stats');
       const data = await res.json();
       if (data.success) {
-        statRequests.textContent = data.metrics.totalRequests.toLocaleString();
-        statRedactions.textContent = data.metrics.totalRedactions.toLocaleString();
-        statThreats.textContent = data.metrics.threatsBlocked.toLocaleString();
+        if (statRequests) statRequests.textContent = data.metrics.totalRequests.toLocaleString();
+        if (statRedactions) statRedactions.textContent = data.metrics.totalRedactions.toLocaleString();
+        if (statThreats) statThreats.textContent = data.metrics.threatsBlocked.toLocaleString();
       }
     } catch (e) {}
   }
@@ -400,7 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
       navigator.clipboard.writeText(rawText);
       btnCopy.textContent = 'COPIED TO CLIPBOARD';
       setTimeout(() => {
-        btnCopy.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg> COPY SANITIZED PAYLOAD`;
+        btnCopy.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg> COPY SANITIZED PAYLOAD`;
       }, 2000);
     }
   });
@@ -454,7 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <tr>
               <td>
                 <span class="tx-id-badge" onclick="window.location.href='/?txId=${item.id}'">
-                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                   ${item.id.slice(0, 18)}...
                 </span>
               </td>
