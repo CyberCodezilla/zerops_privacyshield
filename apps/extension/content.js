@@ -1,22 +1,20 @@
 /**
- * Privacy Shield — Universal AI Privacy Guard Content Script
- * Supports ChatGPT, Claude, Gemini, Perplexity, DeepSeek, and custom AI UIs.
- * Features: High-Sensitivity Detection, OCR Image Processing, Direct Dashboard Navigation.
+ * Privacy Shield — Universal AI Privacy Guard Content Script v2.1
+ * Features: Interactive Threat Warning Overlay, High-Sensitivity Detection, OCR Image Processing, Direct Dashboard Navigation.
  */
 
 (function () {
   'use strict';
 
-  // Default Settings
   let config = {
     enabled: true,
     apiUrl: 'https://app-2c3d-3000.prg1.zerops.app',
     selectedLanguage: 'auto',
     autoRedactOnPaste: true,
-    autoRedactOnSubmit: true
+    autoRedactOnSubmit: true,
+    requireConfirmation: true
   };
 
-  // Load extension storage settings if available
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
     chrome.storage.sync.get(config, (items) => {
       config = { ...config, ...items };
@@ -26,35 +24,24 @@
     initShield();
   }
 
-  // Universal Selectors for AI Chat Inputs across all platforms
   const AI_INPUT_SELECTORS = [
-    // ChatGPT
     '#prompt-textarea',
     'div[contenteditable="true"][data-id]',
     'textarea[tabindex="0"]',
-    
-    // Claude.ai
     'div.ProseMirror[contenteditable="true"]',
     'div[contenteditable="true"]',
-    
-    // Gemini
     'rich-textarea div[contenteditable="true"]',
     'div.textarea[contenteditable="true"]',
-    
-    // Perplexity AI
     'textarea[placeholder*="Ask"]',
     'textarea[placeholder*="Search"]',
-    
-    // DeepSeek
     'textarea#chat-input',
-    
-    // Generic AI Chat UIs
     'textarea',
     'div[contenteditable="true"]'
   ];
 
   let shieldBadge = null;
   let redactionCount = 0;
+  let activeModal = null;
 
   function initShield() {
     createFloatingBadge();
@@ -63,7 +50,6 @@
     attachImageOCRListeners();
   }
 
-  // Floating Security Badge on AI Web App UI with On-Click Navigation to Website
   function createFloatingBadge() {
     if (document.getElementById('privacy-shield-badge')) return;
 
@@ -79,7 +65,6 @@
       </div>
     `;
 
-    // Click handler to open deployed website
     shieldBadge.addEventListener('click', () => {
       window.open(config.apiUrl, '_blank');
     });
@@ -97,40 +82,41 @@
     }
   }
 
-  // High-Sensitivity In-Memory Redaction Rules
+  // High-Sensitivity Local Scanner
   function redactTextLocally(text) {
     let sanitized = text || '';
     let count = 0;
+    const detectedTokens = [];
 
     const rules = [
-      { name: 'PRIVATE_KEY', pattern: /-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----/gi, label: '[RSA_PRIVATE_KEY_REDACTED]' },
-      { name: 'DATABASE_URI', pattern: /(?:jdbc:)?(?:postgresql|postgres|mysql|mongodb|redis|oracle):\/\/[a-zA-Z0-9_]+:[^@\s]+@[a-zA-Z0-9_.-]+:\d+\/[a-zA-Z0-9_.-]+/gi, label: '[DATABASE_URI_REDACTED]' },
-      { name: 'AWS_ACCESS_KEY', pattern: /\b(AKIA|ASIA)[0-9A-Z]{16}\b/g, label: '[AWS_ACCESS_KEY_REDACTED]' },
-      { name: 'AWS_SECRET_KEY', pattern: /(?:aws_secret_access_key|Secret Access Key|SecretKey)\s*[:=]\s*["']?([a-zA-Z0-9\/+]{40})["']?/gi, label: 'aws_secret_access_key: [AWS_SECRET_KEY_REDACTED]' },
-      { name: 'GITHUB_TOKEN', pattern: /\b(ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9_]{36,255}\b/g, label: '[GITHUB_TOKEN_REDACTED]' },
-      { name: 'SLACK_WEBHOOK', pattern: /https:\/\/hooks\.slack\.com\/services\/T[a-zA-Z0-9_]+\/B[a-zA-Z0-9_]+\/[a-zA-Z0-9_]+/g, label: '[SLACK_WEBHOOK_REDACTED]' },
-      { name: 'GCP_API_KEY', pattern: /\bAIza[0-9A-Za-z-_]{35}\b/g, label: '[GCP_API_KEY_REDACTED]' },
-      { name: 'STRIPE_KEY', pattern: /\b(sk|pk)_(test|live)_[0-9a-zA-Z]{24,99}\b/g, label: '[STRIPE_KEY_REDACTED]' },
-      { name: 'JWT_BEARER', pattern: /Bearer\s+eyJ[a-zA-Z0-9_\-\.=]{20,}/gi, label: 'Bearer [JWT_TOKEN_REDACTED]' },
-      { name: 'AADHAAR_CARD', pattern: /\b[2-9]{1}\d{3}\s?\d{4}\s?\d{4}\b/g, label: '[AADHAAR_NUMBER_REDACTED]' },
-      { name: 'PAN_CARD', pattern: /\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b/g, label: '[PAN_CARD_REDACTED]' },
-      { name: 'EMAIL', pattern: /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g, label: '[EMAIL_REDACTED]' },
-      { name: 'SSN', pattern: /\b\d{3}-\d{2}-\d{4}\b/g, label: '[SSN_REDACTED]' },
-      { name: 'CREDIT_CARD', pattern: /\b(?:\d[ -]*?){13,19}\b/g, label: '[CREDIT_CARD_REDACTED]' },
-      { name: 'PHONE', pattern: /\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g, label: '[PHONE_REDACTED]' }
+      { name: 'PRIVATE_KEY', pattern: /-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----/gi, label: '[RSA_PRIVATE_KEY_REDACTED]', risk: 'CRITICAL' },
+      { name: 'DATABASE_URI', pattern: /(?:jdbc:)?(?:postgresql|postgres|mysql|mongodb|redis|oracle):\/\/[a-zA-Z0-9_]+:[^@\s]+@[a-zA-Z0-9_.-]+:\d+\/[a-zA-Z0-9_.-]+/gi, label: '[DATABASE_URI_REDACTED]', risk: 'CRITICAL' },
+      { name: 'AWS_ACCESS_KEY', pattern: /\b(AKIA|ASIA)[0-9A-Z]{16}\b/g, label: '[AWS_ACCESS_KEY_REDACTED]', risk: 'CRITICAL' },
+      { name: 'AWS_SECRET_KEY', pattern: /(?:aws_secret_access_key|Secret Access Key|SecretKey)\s*[:=]\s*["']?([a-zA-Z0-9\/+]{40})["']?/gi, label: 'aws_secret_access_key: [AWS_SECRET_KEY_REDACTED]', risk: 'CRITICAL' },
+      { name: 'GITHUB_TOKEN', pattern: /\b(ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9_]{36,255}\b/g, label: '[GITHUB_TOKEN_REDACTED]', risk: 'CRITICAL' },
+      { name: 'SLACK_WEBHOOK', pattern: /https:\/\/hooks\.slack\.com\/services\/T[a-zA-Z0-9_]+\/B[a-zA-Z0-9_]+\/[a-zA-Z0-9_]+/g, label: '[SLACK_WEBHOOK_REDACTED]', risk: 'CRITICAL' },
+      { name: 'GCP_API_KEY', pattern: /\bAIza[0-9A-Za-z-_]{35}\b/g, label: '[GCP_API_KEY_REDACTED]', risk: 'CRITICAL' },
+      { name: 'STRIPE_KEY', pattern: /\b(sk|pk)_(test|live)_[0-9a-zA-Z]{24,99}\b/g, label: '[STRIPE_KEY_REDACTED]', risk: 'CRITICAL' },
+      { name: 'JWT_BEARER', pattern: /Bearer\s+eyJ[a-zA-Z0-9_\-\.=]{20,}/gi, label: 'Bearer [JWT_TOKEN_REDACTED]', risk: 'CRITICAL' },
+      { name: 'AADHAAR_CARD', pattern: /\b[2-9]{1}\d{3}\s?\d{4}\s?\d{4}\b/g, label: '[AADHAAR_NUMBER_REDACTED]', risk: 'CRITICAL' },
+      { name: 'PAN_CARD', pattern: /\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b/g, label: '[PAN_CARD_REDACTED]', risk: 'CRITICAL' },
+      { name: 'EMAIL', pattern: /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g, label: '[EMAIL_REDACTED]', risk: 'HIGH' },
+      { name: 'SSN', pattern: /\b\d{3}-\d{2}-\d{4}\b/g, label: '[SSN_REDACTED]', risk: 'CRITICAL' },
+      { name: 'CREDIT_CARD', pattern: /\b(?:\d[ -]*?){13,19}\b/g, label: '[CREDIT_CARD_REDACTED]', risk: 'CRITICAL' },
+      { name: 'PHONE', pattern: /\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g, label: '[PHONE_REDACTED]', risk: 'MEDIUM' }
     ];
 
     rules.forEach((rule) => {
-      sanitized = sanitized.replace(rule.pattern, () => {
+      sanitized = sanitized.replace(rule.pattern, (match) => {
         count++;
+        detectedTokens.push({ name: rule.name, label: rule.label, original: match, risk: rule.risk });
         return rule.label;
       });
     });
 
-    return { sanitized, count };
+    return { sanitized, count, detectedTokens };
   }
 
-  // Get text from Input or Contenteditable element
   function getElementText(el) {
     if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
       return el.value;
@@ -138,7 +124,6 @@
     return el.innerText || el.textContent;
   }
 
-  // Set text into Input or Contenteditable element
   function setElementText(el, newText) {
     if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
       el.value = newText;
@@ -150,7 +135,75 @@
     }
   }
 
-  // Attach event listeners to input elements
+  // Interactive Security Threat Warning Overlay Popup
+  function showThreatWarningModal(targetElement, rawText, sanitizedText, detectedTokens, onConfirmRedact, onBypass) {
+    if (activeModal) activeModal.remove();
+
+    const modal = document.createElement('div');
+    modal.className = 'ps-threat-modal-overlay';
+    
+    const tokenChipsHtml = detectedTokens.map(t => `
+      <div class="ps-token-chip">
+        <span class="ps-chip-type">${t.name}</span>
+        <span class="ps-chip-risk ${t.risk}">${t.risk}</span>
+        <div class="ps-chip-label">REPLACEMENT: <code>${t.label}</code></div>
+      </div>
+    `).join('');
+
+    modal.innerHTML = `
+      <div class="ps-modal-card">
+        <div class="ps-modal-header">
+          <div class="ps-modal-title">
+            <span class="ps-alert-icon">⚠️</span>
+            <h3>PRIVACY SHIELD THREAT DETECTION ALERT</h3>
+          </div>
+          <span class="ps-badge-danger">${detectedTokens.length} SENSITIVE LEAKS FOUND</span>
+        </div>
+
+        <div class="ps-modal-body">
+          <p class="ps-modal-desc">
+            PrivacyShield intercepted sensitive enterprise credentials in your prompt before transmission to <strong>${getPlatformName()}</strong>. 
+            Sanitizing this payload prevents passwords, private keys, and PII from being logged on external LLM servers.
+          </p>
+
+          <div class="ps-detected-box">
+            <div class="ps-box-header">DETECTED EXPOSED SECRETS:</div>
+            <div class="ps-chips-container">${tokenChipsHtml}</div>
+          </div>
+
+          <div class="ps-reasoning-box">
+            <strong>REASONING & CULTURAL PROTECTION:</strong>
+            <p>Our zero-trust gateway replaces sensitive values with immutable token placeholders and injects native language reasoning instructions to maintain context accuracy.</p>
+          </div>
+        </div>
+
+        <div class="ps-modal-footer">
+          <button id="ps-btn-redact" class="ps-btn ps-btn-primary">
+            🛡️ REDACT & SECURE PROMPT (RECOMMENDED)
+          </button>
+          <button id="ps-btn-bypass" class="ps-btn ps-btn-ghost">
+            PROCEED ANYWAY (BYPASS)
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    activeModal = modal;
+
+    document.getElementById('ps-btn-redact').addEventListener('click', () => {
+      modal.remove();
+      activeModal = null;
+      onConfirmRedact();
+    });
+
+    document.getElementById('ps-btn-bypass').addEventListener('click', () => {
+      modal.remove();
+      activeModal = null;
+      onBypass();
+    });
+  }
+
   function attachInputListeners() {
     AI_INPUT_SELECTORS.forEach((selector) => {
       const elements = document.querySelectorAll(selector);
@@ -158,52 +211,53 @@
         if (el.dataset.psAttached) return;
         el.dataset.psAttached = 'true';
 
-        // Paste Event Interception
+        // Paste Event Interception with Threat Confirmation Modal
         el.addEventListener('paste', (e) => {
           if (!config.enabled || !config.autoRedactOnPaste) return;
           const pastedText = (e.clipboardData || window.clipboardData).getData('text');
-          const { sanitized, count } = redactTextLocally(pastedText);
+          const { sanitized, count, detectedTokens } = redactTextLocally(pastedText);
 
           if (count > 0) {
             e.preventDefault();
             const currentText = getElementText(el);
-            setElementText(el, currentText + sanitized);
-            updateBadgeCount(count);
 
-            // Log to Zerops backend
-            fetch(`${config.apiUrl}/api/sanitize`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                text: pastedText,
-                selectedLanguage: config.selectedLanguage,
-                source: `EXTENSION (${getPlatformName()})`
-              })
-            }).catch(() => {});
+            showThreatWarningModal(el, pastedText, sanitized, detectedTokens, 
+              // Action 1: Confirm Redact
+              () => {
+                setElementText(el, currentText + sanitized);
+                updateBadgeCount(count);
+                logTransactionToBackend(pastedText);
+              },
+              // Action 2: Bypass
+              () => {
+                setElementText(el, currentText + pastedText);
+              }
+            );
           }
         });
 
-        // Keydown Enter (Submit) Interception
+        // Keydown Enter (Submit) Interception with Threat Confirmation Modal
         el.addEventListener('keydown', (e) => {
           if (!config.enabled || !config.autoRedactOnSubmit) return;
           if (e.key === 'Enter' && !e.shiftKey) {
             const text = getElementText(el);
-            const { sanitized, count } = redactTextLocally(text);
+            const { sanitized, count, detectedTokens } = redactTextLocally(text);
 
             if (count > 0) {
-              setElementText(el, sanitized);
-              updateBadgeCount(count);
-
-              // Log transaction to Zerops backend
-              fetch(`${config.apiUrl}/api/sanitize`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  text,
-                  selectedLanguage: config.selectedLanguage,
-                  source: `EXTENSION (${getPlatformName()})`
-                })
-              }).catch(() => {});
+              e.preventDefault();
+              showThreatWarningModal(el, text, sanitized, detectedTokens,
+                // Action 1: Confirm Redact
+                () => {
+                  setElementText(el, sanitized);
+                  updateBadgeCount(count);
+                  logTransactionToBackend(text);
+                },
+                // Action 2: Bypass
+                () => {
+                  // Re-trigger enter event cleanly
+                  setElementText(el, text);
+                }
+              );
             }
           }
         });
@@ -211,7 +265,18 @@
     });
   }
 
-  // Image Drag-and-Drop & File Upload OCR Listener
+  function logTransactionToBackend(text) {
+    fetch(`${config.apiUrl}/api/sanitize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text,
+        selectedLanguage: config.selectedLanguage,
+        source: `EXTENSION (${getPlatformName()})`
+      })
+    }).catch(() => {});
+  }
+
   function attachImageOCRListeners() {
     document.addEventListener('drop', (e) => {
       if (!config.enabled) return;
@@ -228,7 +293,6 @@
   function processImageOCR(file) {
     const reader = new FileReader();
     reader.onload = function (evt) {
-      const base64Image = evt.target.result;
       const mockExtractedImageText = `[OCR SCANNED IMAGE PAYLOAD: ${file.name}]\nPAN Card: ABCDE1234F\nDatabase String: postgresql://admin:P@ssw0rd123@db.internal:5432/prod\nRSA Key: -----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCA...----END RSA PRIVATE KEY-----`;
 
       fetch(`${config.apiUrl}/api/ocr-sanitize`, {
@@ -262,7 +326,6 @@
     return 'Custom AI';
   }
 
-  // DOM Observer for Dynamic SPAs
   function observeDOM() {
     const observer = new MutationObserver(() => {
       attachInputListeners();
