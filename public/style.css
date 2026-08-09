@@ -385,6 +385,40 @@ body::before {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  position: relative;
+  overflow: visible !important;
+  cursor: help;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metric-card:hover {
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.card-info-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--emerald);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 6px;
+  cursor: help;
+  transition: all 0.2s ease;
+}
+
+.metric-card:hover .card-info-badge,
+.analytics-card:hover .card-info-badge {
+  background: var(--emerald);
+  color: #04070d;
+  border-color: var(--emerald);
 }
 
 .metric-header {
@@ -399,6 +433,8 @@ body::before {
   font-weight: 700;
   color: var(--text-muted);
   letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
 }
 
 .metric-icon {
@@ -414,6 +450,62 @@ body::before {
 .metric-sub {
   font-size: 11px;
   color: #64748b;
+}
+
+/* Card Info Hover Tooltip Cards */
+.info-tooltip-box {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  width: 270px;
+  background: #090e17;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.95), 0 0 20px rgba(16, 185, 129, 0.25);
+  z-index: 99999;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.metric-card:hover .info-tooltip-box,
+.analytics-card:hover .info-tooltip-box {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.info-tooltip-box::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: transparent transparent rgba(16, 185, 129, 0.35) transparent;
+}
+
+.tooltip-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--emerald);
+  letter-spacing: 0.6px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tooltip-text {
+  font-size: 11px;
+  color: #e2e8f0;
+  line-height: 1.45;
+  margin: 0;
 }
 
 /* Navigation Tabs */
@@ -1007,6 +1099,14 @@ mark.token-highlight {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  position: relative;
+  overflow: visible !important;
+  cursor: help;
+  transition: border-color 0.2s ease;
+}
+
+.analytics-card:hover {
+  border-color: rgba(16, 185, 129, 0.4);
 }
 
 .analytics-label {
