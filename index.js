@@ -5,46 +5,61 @@ const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // In-memory telemetry & audit ledger
 const metrics = {
-  totalRequests: 3480,
-  totalRedactions: 16210,
-  threatsBlocked: 1240,
+  totalRequests: 4120,
+  totalRedactions: 18940,
+  threatsBlocked: 1480,
+  ocrScansPerformed: 320,
   startTime: Date.now()
 };
 
 const auditLedger = [
   {
     id: 'tx_9f82a10b-48bc-4b10-91a2-7634f190e21a',
-    timestamp: new Date(Date.now() - 45000).toISOString(),
+    timestamp: new Date(Date.now() - 35000).toISOString(),
+    source: 'EXTENSION (ChatGPT)',
     sourceIp: '192.168.1.105',
-    entitiesFound: ['DATABASE_URI', 'EMAIL', 'SSN'],
+    entitiesFound: ['DATABASE_URI', 'PRIVATE_KEY', 'PAN_CARD'],
     language: 'hi',
     riskLevel: 'CRITICAL',
-    riskScore: 98,
+    riskScore: 99,
     status: 'SANITY_PASSED'
   },
   {
     id: 'tx_3c410e19-9a2f-45d2-b891-119280dca876',
-    timestamp: new Date(Date.now() - 120000).toISOString(),
+    timestamp: new Date(Date.now() - 110000).toISOString(),
+    source: 'EXTENSION (Claude)',
     sourceIp: '10.0.4.12',
-    entitiesFound: ['AWS_ACCESS_KEY', 'GITHUB_TOKEN'],
+    entitiesFound: ['AWS_ACCESS_KEY', 'GITHUB_TOKEN', 'AADHAAR_CARD'],
     language: 'mr',
     riskLevel: 'CRITICAL',
-    riskScore: 96,
+    riskScore: 97,
     status: 'SANITY_PASSED'
   },
   {
     id: 'tx_7e12f901-22ab-41c3-8874-904128f11099',
-    timestamp: new Date(Date.now() - 300000).toISOString(),
+    timestamp: new Date(Date.now() - 280000).toISOString(),
+    source: 'EXTENSION (Gemini)',
     sourceIp: '172.16.0.44',
     entitiesFound: ['SLACK_WEBHOOK', 'HIGH_ENTROPY_SECRET'],
     language: 'en',
     riskLevel: 'HIGH',
     riskScore: 89,
+    status: 'SANITY_PASSED'
+  },
+  {
+    id: 'tx_5a230e99-11ba-4112-9901-33128901caee',
+    timestamp: new Date(Date.now() - 420000).toISOString(),
+    source: 'WEB OCR SCANNER',
+    sourceIp: '192.168.1.112',
+    entitiesFound: ['CREDIT_CARD', 'EMAIL', 'SSN'],
+    language: 'en',
+    riskLevel: 'CRITICAL',
+    riskScore: 96,
     status: 'SANITY_PASSED'
   }
 ];
@@ -122,7 +137,7 @@ function detectHighEntropySpans(text) {
   return spans;
 }
 
-// Core Zero-Trust PII & Secret Redaction Engine
+// High-Sensitivity Enterprise PII & Secret Redaction Engine
 function sanitizeText(text, options = {}) {
   const startTime = process.hrtime();
   let sanitized = text || '';
@@ -130,7 +145,15 @@ function sanitizeText(text, options = {}) {
   const tokensMap = [];
 
   const rules = [
-    // 1. DATABASE CONNECTION URIs
+    // 1. PRIVATE KEYS (RSA, OpenSSH, EC)
+    {
+      type: 'PRIVATE_KEY',
+      pattern: /-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----/gi,
+      label: '[RSA_PRIVATE_KEY_REDACTED]',
+      confidence: 100.0,
+      risk: 'CRITICAL'
+    },
+    // 2. DATABASE CONNECTION URIs
     {
       type: 'DATABASE_URI',
       pattern: /(?:jdbc:)?(?:postgresql|postgres|mysql|mongodb|redis|oracle):\/\/[a-zA-Z0-9_]+:[^@\s]+@[a-zA-Z0-9_.-]+:\d+\/[a-zA-Z0-9_.-]+/gi,
@@ -138,7 +161,7 @@ function sanitizeText(text, options = {}) {
       confidence: 100.0,
       risk: 'CRITICAL'
     },
-    // 2. AWS ACCESS KEY
+    // 3. AWS ACCESS KEY
     {
       type: 'AWS_ACCESS_KEY',
       pattern: /\b(AKIA|ASIA)[0-9A-Z]{16}\b/g,
@@ -146,7 +169,7 @@ function sanitizeText(text, options = {}) {
       confidence: 100.0,
       risk: 'CRITICAL'
     },
-    // 3. AWS SECRET KEY
+    // 4. AWS SECRET KEY
     {
       type: 'AWS_SECRET_KEY',
       pattern: /(?:aws_secret_access_key|Secret Access Key|SecretKey)\s*[:=]\s*["']?([a-zA-Z0-9\/+]{40})["']?/gi,
@@ -154,15 +177,15 @@ function sanitizeText(text, options = {}) {
       confidence: 99.8,
       risk: 'CRITICAL'
     },
-    // 4. GITHUB TOKENS
+    // 5. GITHUB TOKENS
     {
       type: 'GITHUB_TOKEN',
-      pattern: /\b(ghp|gho|ghu|ghs|ghr)_[a-zA-Z0-9]{36,255}\b/g,
+      pattern: /\b(ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9_]{36,255}\b/g,
       label: '[GITHUB_TOKEN_REDACTED]',
       confidence: 100.0,
       risk: 'CRITICAL'
     },
-    // 5. SLACK WEBHOOKS
+    // 6. SLACK WEBHOOKS
     {
       type: 'SLACK_WEBHOOK',
       pattern: /https:\/\/hooks\.slack\.com\/services\/T[a-zA-Z0-9_]+\/B[a-zA-Z0-9_]+\/[a-zA-Z0-9_]+/g,
@@ -170,7 +193,7 @@ function sanitizeText(text, options = {}) {
       confidence: 99.9,
       risk: 'CRITICAL'
     },
-    // 6. GCP API KEYS
+    // 7. GCP API KEYS
     {
       type: 'GCP_API_KEY',
       pattern: /\bAIza[0-9A-Za-z-_]{35}\b/g,
@@ -178,7 +201,7 @@ function sanitizeText(text, options = {}) {
       confidence: 99.7,
       risk: 'CRITICAL'
     },
-    // 7. STRIPE KEYS
+    // 8. STRIPE KEYS
     {
       type: 'STRIPE_KEY',
       pattern: /\b(sk|pk)_(test|live)_[0-9a-zA-Z]{24,99}\b/g,
@@ -186,15 +209,31 @@ function sanitizeText(text, options = {}) {
       confidence: 99.8,
       risk: 'CRITICAL'
     },
-    // 8. BEARER TOKENS
+    // 9. JWT & BEARER TOKENS
     {
-      type: 'BEARER_TOKEN',
-      pattern: /Bearer\s+[a-zA-Z0-9_\-\.=]{20,}/gi,
-      label: 'Bearer [TOKEN_REDACTED]',
-      confidence: 99.2,
+      type: 'JWT_BEARER',
+      pattern: /Bearer\s+eyJ[a-zA-Z0-9_\-\.=]{20,}/gi,
+      label: 'Bearer [JWT_TOKEN_REDACTED]',
+      confidence: 99.6,
       risk: 'CRITICAL'
     },
-    // 9. EMAIL ADDRESSES
+    // 10. AADHAAR CARD (India 12-Digit)
+    {
+      type: 'AADHAAR_CARD',
+      pattern: /\b[2-9]{1}\d{3}\s?\d{4}\s?\d{4}\b/g,
+      label: '[AADHAAR_NUMBER_REDACTED]',
+      confidence: 98.5,
+      risk: 'CRITICAL'
+    },
+    // 11. PAN CARD (India 10-Char)
+    {
+      type: 'PAN_CARD',
+      pattern: /\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b/g,
+      label: '[PAN_CARD_REDACTED]',
+      confidence: 99.1,
+      risk: 'CRITICAL'
+    },
+    // 12. EMAIL ADDRESSES
     {
       type: 'EMAIL',
       pattern: /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g,
@@ -202,7 +241,7 @@ function sanitizeText(text, options = {}) {
       confidence: 99.4,
       risk: 'HIGH'
     },
-    // 10. SSN
+    // 13. SSN
     {
       type: 'SSN',
       pattern: /\b\d{3}-\d{2}-\d{4}\b/g,
@@ -210,7 +249,7 @@ function sanitizeText(text, options = {}) {
       confidence: 99.9,
       risk: 'CRITICAL'
     },
-    // 11. CREDIT CARDS
+    // 14. CREDIT CARDS
     {
       type: 'CREDIT_CARD',
       pattern: /\b(?:\d[ -]*?){13,19}\b/g,
@@ -225,7 +264,7 @@ function sanitizeText(text, options = {}) {
       confidence: 99.8,
       risk: 'CRITICAL'
     },
-    // 12. PHONE NUMBERS
+    // 15. PHONE NUMBERS
     {
       type: 'PHONE',
       pattern: /\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g,
@@ -233,7 +272,7 @@ function sanitizeText(text, options = {}) {
       confidence: 96.5,
       risk: 'MEDIUM'
     },
-    // 13. IP ADDRESSES
+    // 16. IP ADDRESSES
     {
       type: 'IP_ADDRESS',
       pattern: /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g,
@@ -304,20 +343,23 @@ function sanitizeText(text, options = {}) {
   metrics.totalRedactions += totalRedacted;
   if (totalRedacted > 0) metrics.threatsBlocked += 1;
 
-  if (totalRedacted > 0) {
+  const reqSource = options.source || 'WEB API';
+
+  if (totalRedacted > 0 || options.forceLog) {
     const txId = 'tx_' + crypto.randomBytes(8).toString('hex');
-    const maxRisk = tokensMap.some(t => t.risk === 'CRITICAL') ? 'CRITICAL' : 'HIGH';
+    const maxRisk = tokensMap.some(t => t.risk === 'CRITICAL') ? 'CRITICAL' : (tokensMap.some(t => t.risk === 'HIGH') ? 'HIGH' : 'MEDIUM');
     auditLedger.unshift({
       id: txId,
       timestamp: new Date().toISOString(),
+      source: reqSource,
       sourceIp: '192.168.1.' + Math.floor(Math.random() * 200 + 10),
-      entitiesFound: Object.keys(redactionCounts),
+      entitiesFound: Object.keys(redactionCounts).length > 0 ? Object.keys(redactionCounts) : ['CLEAN_SCAN'],
       language: lang,
       riskLevel: maxRisk,
-      riskScore: Math.min(100, totalRedacted * 22 + 40),
+      riskScore: Math.min(100, totalRedacted * 22 + 45),
       status: 'SANITY_PASSED'
     });
-    if (auditLedger.length > 25) auditLedger.pop();
+    if (auditLedger.length > 30) auditLedger.pop();
   }
 
   return {
@@ -344,25 +386,48 @@ app.get(['/health', '/status'], (req, res) => {
 
 // API Endpoints
 app.post('/api/sanitize', (req, res) => {
-  const { text, selectedLanguage } = req.body;
+  const { text, selectedLanguage, source } = req.body;
   if (typeof text !== 'string') {
     return res.status(400).json({ error: 'Field "text" must be a valid string.' });
   }
 
-  const result = sanitizeText(text, { selectedLanguage });
+  const result = sanitizeText(text, { selectedLanguage, source: source || 'EXTENSION' });
   res.json({
     success: true,
     result
   });
 });
 
+// OCR Image Sanitization Endpoint
+app.post('/api/ocr-sanitize', (req, res) => {
+  const { imageText, imageName, selectedLanguage, source } = req.body;
+
+  if (!imageText || typeof imageText !== 'string') {
+    return res.status(400).json({ error: 'Field "imageText" extracted from OCR must be provided.' });
+  }
+
+  metrics.ocrScansPerformed += 1;
+  const result = sanitizeText(imageText, {
+    selectedLanguage,
+    source: source || `EXTENSION OCR (${imageName || 'IMAGE'})`,
+    forceLog: true
+  });
+
+  res.json({
+    success: true,
+    scanType: 'OCR_IMAGE_REDACTION',
+    imageName: imageName || 'scanned_image.png',
+    result
+  });
+});
+
 app.post('/api/proxy-test', (req, res) => {
-  const { prompt, targetApi, selectedLanguage } = req.body;
+  const { prompt, targetApi, selectedLanguage, source } = req.body;
   if (!prompt) {
     return res.status(400).json({ error: 'Prompt field is required.' });
   }
 
-  const result = sanitizeText(prompt, { selectedLanguage });
+  const result = sanitizeText(prompt, { selectedLanguage, source: source || 'ZERO-TRUST PROXY' });
 
   let mockResponse = '';
   if (result.detectedLanguage === 'hi') {

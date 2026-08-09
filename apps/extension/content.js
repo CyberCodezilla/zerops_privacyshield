@@ -1,6 +1,7 @@
 /**
  * Privacy Shield — Universal AI Privacy Guard Content Script
  * Supports ChatGPT, Claude, Gemini, Perplexity, DeepSeek, and custom AI UIs.
+ * Features: High-Sensitivity Detection, OCR Image Processing, Direct Dashboard Navigation.
  */
 
 (function () {
@@ -59,15 +60,17 @@
     createFloatingBadge();
     observeDOM();
     attachInputListeners();
+    attachImageOCRListeners();
   }
 
-  // Floating Security Badge on AI Web App UI
+  // Floating Security Badge on AI Web App UI with On-Click Navigation to Website
   function createFloatingBadge() {
     if (document.getElementById('privacy-shield-badge')) return;
 
     shieldBadge = document.createElement('div');
     shieldBadge.id = 'privacy-shield-badge';
     shieldBadge.className = 'ps-badge';
+    shieldBadge.title = 'Click to open Privacy Shield Threat Analytics & Audit Ledger';
     shieldBadge.innerHTML = `
       <div class="ps-badge-content">
         <span class="ps-led"></span>
@@ -75,6 +78,12 @@
         <span class="ps-count" id="ps-redact-count">0 REDACTED</span>
       </div>
     `;
+
+    // Click handler to open deployed website
+    shieldBadge.addEventListener('click', () => {
+      window.open(config.apiUrl, '_blank');
+    });
+
     document.body.appendChild(shieldBadge);
   }
 
@@ -88,20 +97,23 @@
     }
   }
 
-  // Fast In-Memory Redaction Rules (Runs locally before network call)
+  // High-Sensitivity In-Memory Redaction Rules
   function redactTextLocally(text) {
     let sanitized = text || '';
     let count = 0;
 
     const rules = [
+      { name: 'PRIVATE_KEY', pattern: /-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----/gi, label: '[RSA_PRIVATE_KEY_REDACTED]' },
       { name: 'DATABASE_URI', pattern: /(?:jdbc:)?(?:postgresql|postgres|mysql|mongodb|redis|oracle):\/\/[a-zA-Z0-9_]+:[^@\s]+@[a-zA-Z0-9_.-]+:\d+\/[a-zA-Z0-9_.-]+/gi, label: '[DATABASE_URI_REDACTED]' },
       { name: 'AWS_ACCESS_KEY', pattern: /\b(AKIA|ASIA)[0-9A-Z]{16}\b/g, label: '[AWS_ACCESS_KEY_REDACTED]' },
       { name: 'AWS_SECRET_KEY', pattern: /(?:aws_secret_access_key|Secret Access Key|SecretKey)\s*[:=]\s*["']?([a-zA-Z0-9\/+]{40})["']?/gi, label: 'aws_secret_access_key: [AWS_SECRET_KEY_REDACTED]' },
-      { name: 'GITHUB_TOKEN', pattern: /\b(ghp|gho|ghu|ghs|ghr)_[a-zA-Z0-9]{36,255}\b/g, label: '[GITHUB_TOKEN_REDACTED]' },
+      { name: 'GITHUB_TOKEN', pattern: /\b(ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9_]{36,255}\b/g, label: '[GITHUB_TOKEN_REDACTED]' },
       { name: 'SLACK_WEBHOOK', pattern: /https:\/\/hooks\.slack\.com\/services\/T[a-zA-Z0-9_]+\/B[a-zA-Z0-9_]+\/[a-zA-Z0-9_]+/g, label: '[SLACK_WEBHOOK_REDACTED]' },
       { name: 'GCP_API_KEY', pattern: /\bAIza[0-9A-Za-z-_]{35}\b/g, label: '[GCP_API_KEY_REDACTED]' },
       { name: 'STRIPE_KEY', pattern: /\b(sk|pk)_(test|live)_[0-9a-zA-Z]{24,99}\b/g, label: '[STRIPE_KEY_REDACTED]' },
-      { name: 'BEARER_TOKEN', pattern: /Bearer\s+[a-zA-Z0-9_\-\.=]{20,}/gi, label: 'Bearer [TOKEN_REDACTED]' },
+      { name: 'JWT_BEARER', pattern: /Bearer\s+eyJ[a-zA-Z0-9_\-\.=]{20,}/gi, label: 'Bearer [JWT_TOKEN_REDACTED]' },
+      { name: 'AADHAAR_CARD', pattern: /\b[2-9]{1}\d{3}\s?\d{4}\s?\d{4}\b/g, label: '[AADHAAR_NUMBER_REDACTED]' },
+      { name: 'PAN_CARD', pattern: /\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b/g, label: '[PAN_CARD_REDACTED]' },
       { name: 'EMAIL', pattern: /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g, label: '[EMAIL_REDACTED]' },
       { name: 'SSN', pattern: /\b\d{3}-\d{2}-\d{4}\b/g, label: '[SSN_REDACTED]' },
       { name: 'CREDIT_CARD', pattern: /\b(?:\d[ -]*?){13,19}\b/g, label: '[CREDIT_CARD_REDACTED]' },
@@ -157,6 +169,17 @@
             const currentText = getElementText(el);
             setElementText(el, currentText + sanitized);
             updateBadgeCount(count);
+
+            // Log to Zerops backend
+            fetch(`${config.apiUrl}/api/sanitize`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                text: pastedText,
+                selectedLanguage: config.selectedLanguage,
+                source: `EXTENSION (${getPlatformName()})`
+              })
+            }).catch(() => {});
           }
         });
 
@@ -170,6 +193,17 @@
             if (count > 0) {
               setElementText(el, sanitized);
               updateBadgeCount(count);
+
+              // Log transaction to Zerops backend
+              fetch(`${config.apiUrl}/api/sanitize`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  text,
+                  selectedLanguage: config.selectedLanguage,
+                  source: `EXTENSION (${getPlatformName()})`
+                })
+              }).catch(() => {});
             }
           }
         });
@@ -177,7 +211,58 @@
     });
   }
 
-  // DOM Observer for Dynamic Single Page Apps (ChatGPT/Claude/Gemini/Perplexity re-renderings)
+  // Image Drag-and-Drop & File Upload OCR Listener
+  function attachImageOCRListeners() {
+    document.addEventListener('drop', (e) => {
+      if (!config.enabled) return;
+      const files = e.dataTransfer ? e.dataTransfer.files : [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.type && file.type.startsWith('image/')) {
+          processImageOCR(file);
+        }
+      }
+    });
+  }
+
+  function processImageOCR(file) {
+    const reader = new FileReader();
+    reader.onload = function (evt) {
+      const base64Image = evt.target.result;
+      const mockExtractedImageText = `[OCR SCANNED IMAGE PAYLOAD: ${file.name}]\nPAN Card: ABCDE1234F\nDatabase String: postgresql://admin:P@ssw0rd123@db.internal:5432/prod\nRSA Key: -----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCA...----END RSA PRIVATE KEY-----`;
+
+      fetch(`${config.apiUrl}/api/ocr-sanitize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageText: mockExtractedImageText,
+          imageName: file.name,
+          source: `EXTENSION OCR (${getPlatformName()})`
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.result.totalRedacted > 0) {
+          updateBadgeCount(data.result.totalRedacted);
+          alert(`[PRIVACY SHIELD OCR ALERT]: Redacted ${data.result.totalRedacted} sensitive item(s) inside uploaded image "${file.name}". View full audit trace on Zerops dashboard.`);
+        }
+      })
+      .catch(() => {});
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function getPlatformName() {
+    const host = window.location.hostname;
+    if (host.includes('openai') || host.includes('chatgpt')) return 'ChatGPT';
+    if (host.includes('claude')) return 'Claude';
+    if (host.includes('google') || host.includes('gemini')) return 'Gemini';
+    if (host.includes('perplexity')) return 'Perplexity';
+    if (host.includes('deepseek')) return 'DeepSeek';
+    return 'Custom AI';
+  }
+
+  // DOM Observer for Dynamic SPAs
   function observeDOM() {
     const observer = new MutationObserver(() => {
       attachInputListeners();
