@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Lock } from 'lucide-react';
 
 interface SecurityBadgeProps {
   originalValue: string;
@@ -31,10 +32,14 @@ export const SecurityBadge: React.FC<SecurityBadgeProps> = ({
           fontWeight: 600,
           cursor: 'help',
           boxShadow: '0 0 10px rgba(16, 185, 129, 0.2)',
-          transition: 'all 0.15s ease'
+          transition: 'all 0.15s ease',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '4px'
         }}
       >
-        🔒 {originalValue}
+        <Lock style={{ width: '12px', height: '12px', color: '#10b981' }} />
+        <span>{originalValue}</span>
       </span>
 
       {showTooltip && (

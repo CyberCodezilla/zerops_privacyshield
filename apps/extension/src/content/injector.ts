@@ -1,4 +1,4 @@
-// PrivacyShield Content Script for ChatGPT & Claude (Unbreakable Direct DOM Gatekeeper & Interactive Shield)
+// PrivacyShield Content Script for ChatGPT & Claude (Cybersecurity SOC UI & SVG Vector Shield)
 
 interface ExtensionConfig {
   apiUrl: string;
@@ -94,12 +94,20 @@ function analyzeSensitiveText(text: string): { sanitized: string; count: number;
   return { sanitized, count, items, tokenMap };
 }
 
-console.log('🛡️ PrivacyShield Active on:', window.location.hostname);
+console.log('[PrivacyShield SOC Extension] Guard initialized on:', window.location.hostname);
 
 let badgeElement: HTMLDivElement | null = null;
 let activeModalElement: HTMLDivElement | null = null;
 const sessionTokenMap = new Map<string, string>();
 let isBypassingLock = false;
+
+// Vector SVG Icons
+const SVG_SHIELD_ICON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
+const SVG_LOCK_ICON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+const SVG_ALERT_ICON = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+const SVG_INFO_ICON = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
+const SVG_CANCEL_ICON = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+const SVG_SHIELD_OFF_ICON = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>`;
 
 function injectSecurityBadge() {
   if (document.getElementById('privacyshield-badge')) return;
@@ -113,26 +121,27 @@ function injectSecurityBadge() {
     bottom: 16px;
     right: 16px;
     z-index: 999999;
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
-    border: 1px solid rgba(16, 185, 129, 0.5);
+    background: rgba(9, 13, 22, 0.92);
+    border: 1px solid rgba(16, 185, 129, 0.4);
     border-radius: 9999px;
     padding: 8px 16px;
     color: #6ee7b7;
     font-family: system-ui, -apple-system, sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(16, 185, 129, 0.3);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 15px rgba(16, 185, 129, 0.25);
     display: flex;
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(16px);
   `
   );
 
   badgeElement.innerHTML = `
-    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></span>
-    <span>🛡️ PrivacyShield Active</span>
+    ${SVG_SHIELD_ICON}
+    <span>PRIVACYSHIELD ACTIVE</span>
   `;
 
   document.body.appendChild(badgeElement);
@@ -182,7 +191,7 @@ function replaceProseMirrorContent(el: HTMLElement, sanitizedText: string) {
   document.execCommand('insertText', false, sanitizedText);
 }
 
-// Show Warning Modal highlighting detected sensitive words with explanation & choices
+// Cybersecurity Warning Modal with Vector Icons
 function showSecurityWarningModal(
   items: DetectedItem[],
   sanitizedText: string,
@@ -201,8 +210,8 @@ function showSecurityWarningModal(
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(8px);
+    background: rgba(3, 7, 18, 0.85);
+    backdrop-filter: blur(16px);
     z-index: 9999999;
     display: flex;
     align-items: center;
@@ -214,47 +223,53 @@ function showSecurityWarningModal(
   );
 
   const itemsHtml = items.map(item => `
-    <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px;">
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-        <span style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; font-size: 11px; font-weight: 700; padding: 2px 6px; borderRadius: 4px; font-family: monospace;">
+    <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+        <span style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 4px; font-family: monospace; letter-spacing: 0.5px;">
           ${item.type}
         </span>
-        <span style="color: #fecaca; font-family: monospace; font-size: 12px; font-weight: 600; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 4px;">
-          ${item.original.length > 28 ? item.original.substring(0, 24) + '...' : item.original}
+        <span style="color: #fecaca; font-family: monospace; font-size: 12px; font-weight: 600; background: rgba(0, 0, 0, 0.5); padding: 3px 10px; border-radius: 6px; border: 1px solid rgba(239,68,68,0.2);">
+          ${item.original.length > 32 ? item.original.substring(0, 28) + '...' : item.original}
         </span>
       </div>
-      <div style="font-size: 12px; color: #cbd5e1; line-height: 1.4;">
-        💡 <strong>Reason:</strong> ${item.explanation}
+      <div style="font-size: 12px; color: #cbd5e1; line-height: 1.4; display: flex; align-items: flex-start; gap: 6px;">
+        <span style="margin-top: 1px; flex-shrink: 0;">${SVG_INFO_ICON}</span>
+        <span><strong>Threat Analysis:</strong> ${item.explanation}</span>
       </div>
     </div>
   `).join('');
 
   activeModalElement.innerHTML = `
-    <div style="background: #0f172a; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 16px; width: 100%; max-width: 520px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 30px rgba(239, 68, 68, 0.2); overflow: hidden;">
+    <div style="background: #090d16; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 16px; width: 100%; max-width: 540px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9), 0 0 35px rgba(239, 68, 68, 0.25); overflow: hidden;">
       
-      <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(185, 28, 28, 0.1)); padding: 18px 20px; border-bottom: 1px solid rgba(239, 68, 68, 0.2); display: flex; align-items: center; gap: 12px;">
-        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); display: flex; align-items: center; justify-content: center; font-size: 20px;">
-          ⚠️
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(185, 28, 28, 0.1)); padding: 18px 22px; border-bottom: 1px solid rgba(239, 68, 68, 0.3); display: flex; align-items: center; gap: 14px;">
+        <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); display: flex; align-items: center; justify-content: center;">
+          ${SVG_ALERT_ICON}
         </div>
         <div>
-          <h3 style="margin: 0; color: #f8fafc; font-size: 16px; font-weight: 700;">Sensitive Data Leak Intercepted</h3>
-          <p style="margin: 2px 0 0; color: #94a3b8; font-size: 12px;">PrivacyShield prevented raw confidential data from reaching ChatGPT servers.</p>
+          <h3 style="margin: 0; color: #f8fafc; font-size: 15px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Security Interception Active</h3>
+          <p style="margin: 3px 0 0; color: #94a3b8; font-size: 12px;">Unencrypted sensitive credentials detected prior to upstream transmission.</p>
         </div>
       </div>
 
+      <!-- Content -->
       <div style="padding: 20px; max-height: 320px; overflow-y: auto;">
-        <div style="font-size: 12px; font-weight: 700; color: #fca5a5; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
-          Detected Sensitive Entities (${items.length}):
+        <div style="font-size: 11px; font-weight: 800; color: #fca5a5; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px;">
+          Flagged Security Items (${items.length}):
         </div>
         ${itemsHtml}
       </div>
 
-      <div style="background: #020617; padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: flex-end; gap: 10px;">
-        <button id="ps-cancel-btn" style="padding: 9px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: #94a3b8; font-size: 13px; font-weight: 600; cursor: pointer;">
-          ❌ Cancel & Edit
+      <!-- Action Footer -->
+      <div style="background: #030712; padding: 16px 22px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: flex-end; gap: 12px;">
+        <button id="ps-cancel-btn" style="padding: 9px 16px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.15); background: transparent; color: #94a3b8; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+          ${SVG_CANCEL_ICON}
+          <span>ABORT & REVISE</span>
         </button>
-        <button id="ps-encrypt-btn" style="padding: 9px 18px; border-radius: 8px; border: none; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);">
-          🔒 Encrypt & Send Safe Prompt
+        <button id="ps-encrypt-btn" style="padding: 9px 18px; border-radius: 8px; border: none; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; font-size: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 0 18px rgba(16, 185, 129, 0.4); letter-spacing: 0.3px;">
+          ${SVG_LOCK_ICON}
+          <span>ENCRYPT & DISPATCH SAFE PROMPT</span>
         </button>
       </div>
 
@@ -287,8 +302,8 @@ function showImageUploadBlockedModal(fileName: string, reason: string) {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(8px);
+    background: rgba(3, 7, 18, 0.85);
+    backdrop-filter: blur(16px);
     z-index: 9999999;
     display: flex;
     align-items: center;
@@ -300,26 +315,26 @@ function showImageUploadBlockedModal(fileName: string, reason: string) {
   );
 
   activeModalElement.innerHTML = `
-    <div style="background: #0f172a; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 16px; width: 100%; max-width: 480px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 30px rgba(239, 68, 68, 0.2); overflow: hidden;">
+    <div style="background: #090d16; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 16px; width: 100%; max-width: 480px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9), 0 0 35px rgba(239, 68, 68, 0.25); overflow: hidden;">
       
-      <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(185, 28, 28, 0.1)); padding: 18px 20px; border-bottom: 1px solid rgba(239, 68, 68, 0.2); display: flex; align-items: center; gap: 12px;">
-        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); display: flex; align-items: center; justify-content: center; font-size: 20px;">
-          🚫
+      <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(185, 28, 28, 0.1)); padding: 18px 22px; border-bottom: 1px solid rgba(239, 68, 68, 0.3); display: flex; align-items: center; gap: 14px;">
+        <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); display: flex; align-items: center; justify-content: center;">
+          ${SVG_SHIELD_OFF_ICON}
         </div>
         <div>
-          <h3 style="margin: 0; color: #f8fafc; font-size: 16px; font-weight: 700;">Image Upload Cancelled</h3>
-          <p style="margin: 2px 0 0; color: #fca5a5; font-size: 12px;">File: ${fileName}</p>
+          <h3 style="margin: 0; color: #f8fafc; font-size: 15px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Image Upload Blocked</h3>
+          <p style="margin: 3px 0 0; color: #fca5a5; font-size: 12px;">File: ${fileName}</p>
         </div>
       </div>
 
       <div style="padding: 20px; font-size: 13px; color: #cbd5e1; line-height: 1.5;">
-        🔒 <strong>PrivacyShield Protection Triggered:</strong><br/>
+        <strong>Policy Enforcement Triggered:</strong><br/>
         ${reason}
       </div>
 
-      <div style="background: #020617; padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: flex-end;">
-        <button id="ps-image-dismiss-btn" style="padding: 8px 18px; border-radius: 8px; border: none; background: #334155; color: #f8fafc; font-size: 13px; font-weight: 600; cursor: pointer;">
-          Got It (Upload Blocked)
+      <div style="background: #030712; padding: 14px 22px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: flex-end;">
+        <button id="ps-image-dismiss-btn" style="padding: 9px 18px; border-radius: 8px; border: none; background: #334155; color: #f8fafc; font-size: 12px; font-weight: 700; cursor: pointer;">
+          DISMISS (UPLOAD CANCELLED)
         </button>
       </div>
 
@@ -333,7 +348,7 @@ function showImageUploadBlockedModal(fileName: string, reason: string) {
   });
 }
 
-// SYNCHRONOUS Submission Gatekeeper Lock (Traps ALL Mouse & Keyboard events on 0ms)
+// SYNCHRONOUS Submission Gatekeeper Lock
 function handleSynchronousSubmissionGuard(e: Event) {
   if (isBypassingLock) return;
 
@@ -348,7 +363,7 @@ function handleSynchronousSubmissionGuard(e: Event) {
     e.stopPropagation();
     if (e.stopImmediatePropagation) e.stopImmediatePropagation();
 
-    console.log('🛡️ [PrivacyShield GATEKEEPER] Trapped submission attempt containing sensitive data:', items);
+    console.log('[PrivacyShield SOC] Trapped submission containing sensitive entities:', items);
 
     // Show warning modal
     showSecurityWarningModal(items, sanitized, tokenMap, async () => {

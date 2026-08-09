@@ -6,14 +6,18 @@ zerops:
         - npm install
         - npm run build --workspace=apps/api
       deployFiles:
-        - apps/api/dist/~
+        - apps/api/dist
         - apps/api/package.json
         - package.json
+        - node_modules
     run:
       base: nodejs@20
       ports:
         - port: 3000
-      start: node apps/api/dist/index.js
+          httpSupport: true
+      start: npm run start --workspace=apps/api
+      envVariables:
+        NER_SERVICE_URL: http://nerengine:8000
 
   - setup: web
     build:
@@ -26,15 +30,21 @@ zerops:
     run:
       base: static
 
-  - setup: ner-engine
+  - setup: nerengine
     build:
       base: python@3.11
       buildCommands:
-        - pip install -r apps/ner-service/requirements.txt
+        - python -m venv venv
+        - . venv/bin/activate
+        - pip install --no-cache-dir -r apps/ner-service/requirements.txt
       deployFiles:
-        - apps/ner-service/~
+        - apps/ner-service
+        - venv
     run:
       base: python@3.11
       ports:
         - port: 8000
-      start: uvicorn apps.ner-service.main:app --host 0.0.0.0 --port 8000
+          httpSupport: true
+      start: |
+        . venv/bin/activate
+        python -m uvicorn apps.ner-service.main:app --host 0.0.0.0 --port 8000
