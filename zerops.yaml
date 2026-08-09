@@ -1,0 +1,27 @@
+zerops:
+  - setup: api
+    build:
+      base: nodejs@20
+      buildCommands:
+        - npm install
+        - npm run build --workspace=apps/api
+      deployFiles:
+        - apps/api/dist/~
+        - apps/api/package.json
+        - package.json
+    run:
+      base: nodejs@20
+      ports:
+        - port: 3000
+      start: node apps/api/dist/index.js
+
+  - setup: web
+    build:
+      base: nodejs@20
+      buildCommands:
+        - npm install
+        - npm run build --workspace=apps/web
+      deployFiles:
+        - apps/web/dist/~
+    run:
+      base: static

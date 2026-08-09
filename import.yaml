@@ -1,0 +1,20 @@
+project:
+  name: privacyshield
+  services:
+    - hostname: api
+      type: nodejs@20
+      mode: NON_HA
+      verticalAutoscaling:
+        minCpu: 1
+        maxCpu: 2
+        minRam: 0.25
+        maxRam: 0.5
+      enableSubdomainAccess: true
+
+    - hostname: web
+      type: static
+      enableSubdomainAccess: true
+
+    - hostname: db
+      type: postgresql@16
+      mode: NON_HA

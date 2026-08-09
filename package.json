@@ -1,0 +1,26 @@
+{
+  "name": "privacyshield-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Zero-trust AI proxy middleware and compliance dashboard for Zerops",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=apps/api && npm run build --workspace=apps/web",
+    "dev": "npm run dev:api & npm run dev:web",
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "start": "npm run start --workspace=apps/api"
+  },
+  "keywords": [
+    "ai",
+    "proxy",
+    "pii",
+    "compliance",
+    "zerops",
+    "security"
+  ],
+  "author": "PrivacyShield Team",
+  "license": "MIT"
+}
