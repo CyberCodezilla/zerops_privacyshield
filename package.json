@@ -1,19 +1,12 @@
 {
-  "name": "privacyshield-monorepo",
-  "version": "2.0.0",
-  "private": true,
+  "name": "privacy-shield-app",
+  "version": "2.4.0",
   "description": "Privacy Shield — Zero-Trust Real-Time PII & Secret Redaction Gateway & Compliance Dashboard for Zerops",
   "main": "index.js",
-  "workspaces": [
-    "apps/*"
-  ],
+  "type": "commonjs",
   "scripts": {
-    "build": "npm run build --workspace=apps/api && npm run build --workspace=apps/web && npm run build --workspace=apps/extension",
-    "dev": "npm run dev:api & npm run dev:web",
-    "dev:api": "npm run dev --workspace=apps/api",
-    "dev:web": "npm run dev --workspace=apps/web",
-    "start": "npm run start --workspace=apps/api",
-    "start:node": "node index.js"
+    "start": "node index.js",
+    "test": "node index.js --test"
   },
   "keywords": [
     "ai",

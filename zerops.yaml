@@ -1,35 +1,32 @@
 zerops:
-  - setup: api
+  # 1. API Proxy Gateway & Web Dashboard Service
+  - setup: app
     build:
       base: nodejs@22
       buildCommands:
         - npm install
-        - npm run build --workspace=apps/api
+        - node generate-icons.js
+        - node create-zip.js
       deployFiles:
-        - apps/api/dist
-        - apps/api/package.json
+        - index.js
         - package.json
+        - package-lock.json
+        - public
+        - create-zip.js
+        - generate-icons.js
+        - create-logos.js
+        - apps
         - node_modules
     run:
       base: nodejs@22
       ports:
         - port: 3000
           httpSupport: true
-      start: npm run start --workspace=apps/api
+      start: node index.js
       envVariables:
         NER_SERVICE_URL: http://nerengine:8000
 
-  - setup: web
-    build:
-      base: nodejs@22
-      buildCommands:
-        - npm install
-        - npm run build --workspace=apps/web
-      deployFiles:
-        - apps/web/dist/~
-    run:
-      base: static
-
+  # 2. Python GLiNER ML Microservice
   - setup: nerengine
     build:
       base: python@3.11
