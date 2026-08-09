@@ -303,12 +303,84 @@ document.addEventListener('DOMContentLoaded', () => {
     if (inputText.value.trim()) runSanitization();
   });
 
+  function escapeHtml(str) {
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function showTransactionInspectionModal(tx) {
+    const existingModal = document.getElementById('web-inspection-modal');
+    if (existingModal) existingModal.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'web-inspection-modal';
+    modal.className = 'web-modal-overlay';
+
+    const riskBadgeClass = tx.riskLevel === 'CRITICAL' ? 'badge-crimson' : (tx.riskLevel === 'HIGH' ? 'badge-amber' : 'badge-cyan');
+    const entitiesList = (tx.entitiesFound || []).join(', ') || 'Sensitive Credentials';
+
+    modal.innerHTML = `
+      <div class="web-modal-card">
+        <div class="web-modal-header">
+          <div class="web-modal-title-group">
+            <span class="panel-dot crimson"></span>
+            <h3>TRANSACTION AUDIT CERTIFICATE & THREAT DETAILS</h3>
+          </div>
+          <button class="web-modal-close-btn" id="btnCloseInspectModal">&times;</button>
+        </div>
+
+        <div class="web-modal-body">
+          <div class="risk-analysis-banner">
+            <div class="risk-banner-header">
+              <span class="risk-banner-title">[SECURITY THREAT DETECTED & INTERCEPTED]</span>
+              <span class="badge ${riskBadgeClass}">${tx.riskLevel} THREAT RISK (SCORE: ${tx.riskScore}/100)</span>
+            </div>
+            <p class="risk-analysis-text">
+              <strong>WHY THIS PROMPT WAS RISKY TO SHARE:</strong><br>
+              Sharing raw credentials (${entitiesList}) with public AI servers exposes enterprise infrastructure to severe data leaks, unauthorized access, and compliance violations. PrivacyShield intercepted and anonymized this payload from <strong>${tx.source || 'Extension'}</strong> before transmission.
+            </p>
+          </div>
+
+          <div class="modal-diff-grid">
+            <div class="modal-diff-box">
+              <span class="modal-diff-label">RAW UN-SANITIZED INBOUND PROMPT (INTERCEPTED)</span>
+              <div class="modal-diff-content">${escapeHtml(tx.originalText || '')}</div>
+            </div>
+            <div class="modal-diff-box">
+              <span class="modal-diff-label">ANONYMIZED SANITIZED PROMPT (SENT TO AI)</span>
+              <div class="modal-diff-content">${renderHighlightedText(tx.sanitizedText || '')}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="web-modal-footer">
+          <button class="btn btn-secondary" id="btnCopyInspectSanitized">COPY SANITIZED PROMPT</button>
+          <button class="btn btn-primary" id="btnDoneInspectModal">CLOSE CERTIFICATE</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    document.getElementById('btnCloseInspectModal').addEventListener('click', () => modal.remove());
+    document.getElementById('btnDoneInspectModal').addEventListener('click', () => modal.remove());
+    document.getElementById('btnCopyInspectSanitized').addEventListener('click', () => {
+      navigator.clipboard.writeText(tx.sanitizedText || '');
+      alert('Sanitized prompt copied to clipboard!');
+    });
+  }
+
   async function checkSynchronizedTransaction() {
     const urlParams = new URLSearchParams(window.location.search);
     const txId = urlParams.get('txId');
+    const tabParam = urlParams.get('tab');
+
+    if (tabParam === 'ledger') {
+      const ledgerTabBtn = document.querySelector('.tab-btn[data-tab="ledger"]');
+      if (ledgerTabBtn) ledgerTabBtn.click();
+    }
 
     if (!txId) {
-      btnPresetSupport.click();
+      if (tabParam !== 'ledger') btnPresetSupport.click();
       return;
     }
 
@@ -357,12 +429,15 @@ document.addEventListener('DOMContentLoaded', () => {
           }).join('');
         }
 
-        tabBtns[0].click();
+        const ledgerTabBtn = document.querySelector('.tab-btn[data-tab="ledger"]');
+        if (ledgerTabBtn) ledgerTabBtn.click();
+
+        showTransactionInspectionModal(tx);
       } else {
-        btnPresetSupport.click();
+        if (tabParam !== 'ledger') btnPresetSupport.click();
       }
     } catch (e) {
-      btnPresetSupport.click();
+      if (tabParam !== 'ledger') btnPresetSupport.click();
     }
   }
 
