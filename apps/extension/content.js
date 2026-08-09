@@ -1,10 +1,20 @@
 /**
- * Privacy Shield — Universal AI Privacy Guard Content Script v2.3
- * 22+ Expanded Enterprise Detection Patterns, Hinglish/Minglish Jargon Scanners, Synchronized Deep-Linking & Threat Warning Overlay.
+ * Privacy Shield — Universal AI Privacy Guard Content Script v2.4
+ * Features: Web Page Extension Handshake Ping, Interactive Threat Alert Modal, 22+ Patterns, Deep-Linking & OCR Scanner.
  */
 
 (function () {
   'use strict';
+
+  // Set attribute on DOM so the Web Application knows extension is active
+  document.documentElement.setAttribute('data-privacy-shield-installed', 'true');
+  window.postMessage({ type: 'PRIVACY_SHIELD_EXTENSION_ACTIVE', version: '2.4' }, '*');
+
+  window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'PRIVACY_SHIELD_PING_REQUEST') {
+      window.postMessage({ type: 'PRIVACY_SHIELD_EXTENSION_ACTIVE', version: '2.4' }, '*');
+    }
+  });
 
   let config = {
     enabled: true,
@@ -166,7 +176,7 @@
       <div class="ps-modal-card">
         <div class="ps-modal-header">
           <div class="ps-modal-title">
-            <span class="ps-alert-icon">⚠️</span>
+            <span class="ps-alert-icon">[ALERT]</span>
             <h3>PRIVACY SHIELD THREAT DETECTION ALERT</h3>
           </div>
           <span class="ps-badge-danger">${detectedTokens.length} SENSITIVE LEAKS FOUND</span>
@@ -191,7 +201,7 @@
 
         <div class="ps-modal-footer">
           <button id="ps-btn-redact" class="ps-btn ps-btn-primary">
-            🛡️ REDACT & SECURE PROMPT (RECOMMENDED)
+            REDACT & SECURE PROMPT (RECOMMENDED)
           </button>
           <button id="ps-btn-bypass" class="ps-btn ps-btn-ghost">
             PROCEED ANYWAY (BYPASS)

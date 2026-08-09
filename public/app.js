@@ -6,9 +6,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const statThreats = document.getElementById('statThreats');
   const telemetryLatency = document.getElementById('telemetryLatency');
   const telemetryLangBadge = document.getElementById('telemetryLangBadge');
+  const extensionStatusText = document.getElementById('extensionStatusText');
+  const extGridBadge = document.getElementById('extGridBadge');
 
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabContents = document.querySelectorAll('.tab-content');
+  const tabBtnGuide = document.getElementById('tabBtnGuide');
 
   const selectedLang = document.getElementById('selectedLang');
   const inputText = document.getElementById('inputText');
@@ -46,6 +49,66 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const ledgerTableBody = document.getElementById('ledgerTableBody');
   const btnExportLedger = document.getElementById('btnExportLedger');
+  const clickableAiCards = document.querySelectorAll('.clickable-ai-card');
+
+  let isExtensionInstalled = false;
+
+  // Extension Active Handshake Ping Detector
+  function checkExtensionActiveStatus() {
+    if (document.documentElement.getAttribute('data-privacy-shield-installed') === 'true') {
+      setExtensionActiveState(true);
+      return;
+    }
+
+    window.postMessage({ type: 'PRIVACY_SHIELD_PING_REQUEST' }, '*');
+  }
+
+  window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'PRIVACY_SHIELD_EXTENSION_ACTIVE') {
+      setExtensionActiveState(true);
+    }
+  });
+
+  function setExtensionActiveState(active) {
+    isExtensionInstalled = active;
+    if (active) {
+      if (extensionStatusText) {
+        extensionStatusText.textContent = 'EXTENSION ACTIVE & SYNCED';
+        extensionStatusText.className = 'telemetry-val text-emerald';
+      }
+      if (extGridBadge) {
+        extGridBadge.textContent = 'EXTENSION ACTIVE & SYNCED';
+        extGridBadge.className = 'badge badge-emerald';
+      }
+    } else {
+      if (extensionStatusText) {
+        extensionStatusText.textContent = 'EXTENSION NOT DETECTED (CLICK TO SETUP)';
+        extensionStatusText.className = 'telemetry-val text-amber';
+      }
+      if (extGridBadge) {
+        extGridBadge.textContent = 'SETUP EXTENSION TO RUN IN BROWSER';
+        extGridBadge.className = 'badge badge-amber';
+      }
+    }
+  }
+
+  checkExtensionActiveStatus();
+  setTimeout(checkExtensionActiveStatus, 1500);
+
+  // Click Handlers for AI Cards
+  clickableAiCards.forEach((card) => {
+    card.addEventListener('click', () => {
+      const targetUrl = card.getAttribute('data-url');
+      const platformName = card.getAttribute('data-name');
+
+      if (isExtensionInstalled) {
+        window.open(targetUrl, '_blank');
+      } else {
+        alert(`[PRIVACY SHIELD EXTENSION NOTICE]: To protect your prompts on ${platformName}, please install and activate the PrivacyShield Chrome Extension. Redirecting to Step-by-Step Setup Guide.`);
+        if (tabBtnGuide) tabBtnGuide.click();
+      }
+    });
+  });
 
   // Presets
   const PRESETS = {
@@ -107,12 +170,10 @@ document.addEventListener('DOMContentLoaded', () => {
   updateStats();
   setInterval(checkHealth, 10000);
 
-  // Input Character Count
   inputText.addEventListener('input', () => {
     inputCharCount.textContent = `${inputText.value.length} BYTES`;
   });
 
-  // Presets Click Handlers
   btnPresetSupport.addEventListener('click', () => {
     inputText.value = PRESETS.support;
     selectedLang.value = 'auto';
@@ -152,7 +213,6 @@ document.addEventListener('DOMContentLoaded', () => {
     tokensMapContainer.innerHTML = '<span class="no-data">No PII or credential tokens detected in current buffer.</span>';
   });
 
-  // Highlight Redacted Tokens in Output HTML
   function renderHighlightedText(text) {
     if (!text) return '';
     const redactionPattern = /(\[[A-Z_]+_REDACTED\]|Bearer \[TOKEN_REDACTED\]|Bearer \[JWT_TOKEN_REDACTED\])/g;
@@ -160,7 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(redactionPattern, '<mark class="token-highlight emerald">$1</mark>');
   }
 
-  // Core Sanitization Action
   async function runSanitization() {
     const text = inputText.value;
     if (!text.trim()) {
@@ -195,7 +254,6 @@ document.addEventListener('DOMContentLoaded', () => {
         langInstructionDisplay.textContent = languageInstruction;
         promptInjectionBadge.textContent = `INJECTION: ACTIVE (${detectedLanguage.toUpperCase()})`;
 
-        // Render Token Map Cards
         if (tokensMap && tokensMap.length > 0) {
           tokensMapContainer.innerHTML = tokensMap.map((t) => {
             const riskClass = t.risk === 'CRITICAL' ? 'badge-crimson' : (t.risk === 'HIGH' ? 'badge-amber' : 'badge-cyan');
@@ -237,7 +295,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (inputText.value.trim()) runSanitization();
   });
 
-  // Synchronized Transaction Inspection from URL Parameter ?txId=...
   async function checkSynchronizedTransaction() {
     const urlParams = new URLSearchParams(window.location.search);
     const txId = urlParams.get('txId');
@@ -292,7 +349,6 @@ document.addEventListener('DOMContentLoaded', () => {
           }).join('');
         }
 
-        // Switch to Playground Tab
         tabBtns[0].click();
       } else {
         btnPresetSupport.click();
@@ -302,7 +358,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // OCR Image Sanitization Action
   btnScanOcr.addEventListener('click', async () => {
     const file = ocrFileInput.files[0];
     if (!file) {
@@ -339,7 +394,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Copy Sanitized Payload
   btnCopy.addEventListener('click', () => {
     const rawText = outputDisplay.innerText || outputDisplay.textContent;
     if (rawText && !rawText.includes('Click "EXECUTE SANITIZATION"')) {
@@ -351,7 +405,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Proxy Test Action
   btnTestProxy.addEventListener('click', async () => {
     const prompt = proxyPrompt.value;
     const targetApi = proxyTarget.value;
@@ -384,7 +437,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Audit Ledger Fetch & Table Formatting
   async function fetchLedger() {
     try {
       const res = await fetch('/api/audit-ledger');
@@ -447,6 +499,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Check URL Parameter for Synchronized Extension Transaction Inspection
   checkSynchronizedTransaction();
 });
