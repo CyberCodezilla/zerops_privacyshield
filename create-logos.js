@@ -9,14 +9,27 @@ if (!fs.existsSync(assetsDir)) {
 const logos = {
   'chatgpt.svg': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" preserveAspectRatio="xMidYMid meet">
   <defs>
-    <linearGradient id="aiBrainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="robotGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#10b981"/>
       <stop offset="100%" stop-color="#059669"/>
     </linearGradient>
   </defs>
-  <rect width="100" height="100" rx="22" fill="url(#aiBrainGrad)"/>
-  <path d="M50 18 C50 35.67 35.67 50 18 50 C35.67 50 50 64.33 50 82 C50 64.33 64.33 50 82 50 C64.33 50 50 35.67 50 18 Z" fill="#ffffff"/>
-  <path d="M74 20 C74 27.7 67.7 34 60 34 C67.7 34 74 40.3 74 48 C74 40.3 80.3 34 88 34 C80.3 34 74 27.7 74 20 Z" fill="#ffffff" opacity="0.85"/>
+  <rect width="100" height="100" rx="22" fill="url(#robotGrad)"/>
+  <!-- Robot Antenna -->
+  <circle cx="50" cy="18" r="4" fill="#ffffff"/>
+  <rect x="48" y="22" width="4" height="8" rx="2" fill="#ffffff"/>
+  <!-- Robot Head Frame -->
+  <rect x="22" y="30" width="56" height="46" rx="14" fill="#ffffff"/>
+  <!-- Robot Ears -->
+  <rect x="16" y="44" width="6" height="18" rx="3" fill="#ffffff" opacity="0.85"/>
+  <rect x="78" y="44" width="6" height="18" rx="3" fill="#ffffff" opacity="0.85"/>
+  <!-- Dark Visor Screen -->
+  <rect x="30" y="40" width="40" height="18" rx="8" fill="#04070d"/>
+  <!-- Glowing Cyber Eyes -->
+  <circle cx="41" cy="49" r="4" fill="#10b981"/>
+  <circle cx="59" cy="49" r="4" fill="#10b981"/>
+  <!-- Robot Mouth Lines -->
+  <path d="M38 66 H62 M42 66 V70 M50 66 V70 M58 66 V70" stroke="#04070d" stroke-width="2.5" stroke-linecap="round"/>
 </svg>`,
 
   'claude.svg': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" preserveAspectRatio="xMidYMid meet">
