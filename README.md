@@ -24,6 +24,12 @@
 | `SSN: 000-12-3456` | `SSN: [SSN_REDACTED]` |
 | `Patient Jane Doe (MRN: 987654)` | `Patient [PHI_NAME_REDACTED_1] (MRN: [PHI_NAME_REDACTED_2])` |
 
+### 🔐 Sanitizer Playground — Live Redaction Demo
+
+> The 3-panel playground lets you paste raw sensitive data on the left and instantly see the sanitized & token-mapped output on the right — with language detection, entity count, and sub-millisecond processing time.
+
+![Sanitizer Playground — Real-time PII redaction with 6 entities detected in 0.17ms (Hindi mode)](Encrypted_sensitive_data.jpeg)
+
 ---
 
 ## 🚀 Key Features & Architectural Highlights
@@ -67,28 +73,33 @@
 
 ## 🔌 Chrome Extension Installation & Setup
 
-Follow these steps to load and configure the extension on Google Chrome:
+> The PrivacyShield Chrome Extension provides real-time AI protection across ChatGPT, Claude, Gemini, Perplexity, and DeepSeek. Follow the visual guide below to get started in under 2 minutes.
 
-### 1. Extract Extension Files
-1. Download `privacy-shield-extension.zip` directly from the web dashboard or project root.
-2. Extract the `.zip` file into a local folder.
+![Chrome Extension Installation & Activation Guide — 6-step visual walkthrough from download to protection](How_to_use.jpeg)
 
-### 2. Load Unpacked in Chrome
-1. Open Google Chrome and navigate to `chrome://extensions/`.
-2. Enable **Developer mode** using the toggle switch in the top-right corner.
-3. Click **Load unpacked**.
-4. Select the extracted `privacy-shield-extension` directory (containing `manifest.json`).
+### Quick Steps:
 
-### 3. Connect to Production Gateway
-1. Click the **PrivacyShield** icon in your Chrome toolbar.
-2. Verify the **API Base URL** points to your local or Zerops gateway (`http://localhost:3000`).
-3. Open ChatGPT, Claude, Gemini, or DeepSeek and experience real-time redaction!
+1. **Download** — Click the "Download .zip" button on the PrivacyShield dashboard.
+2. **Extract** — Right-click the `.zip` file → "Extract All" to a local folder.
+3. **Open Extensions** — Navigate to `chrome://extensions/` in Chrome.
+4. **Developer Mode** — Toggle ON the Developer Mode switch (top-right corner).
+5. **Load Unpacked** — Click "Load unpacked" and select the extracted folder containing `manifest.json`.
+6. **Launch & Protect** — The shield icon appears in your toolbar. Click it to activate real-time AI protection!
+
+### Connect to Production Gateway
+- Click the **PrivacyShield** icon in your Chrome toolbar.
+- Verify the **API Base URL** points to your local or Zerops gateway (`http://localhost:3000`).
+- Open ChatGPT, Claude, Gemini, or DeepSeek and experience real-time redaction!
 
 ---
 
 ## 🛠️ Zerops Deployment Guide (Infrastructure-as-Code)
 
-### 1. `zerops.yaml` Configuration
+> PrivacyShield deploys as a multi-service stack on Zerops with a single `zerops.yaml` manifest. The screenshot below shows both the Node.js API gateway (`api:3000`) and the Python GLiNER ML microservice (`nerengine`) running in the EU Central (PRG1) region.
+
+![Zerops Cloud Dashboard — PrivacyShield multi-service deployment with Node.js API gateway and Python NER engine](Zerops_deployment.jpeg)
+
+### `zerops.yaml` Configuration
 The project root contains the unified deployment manifest:
 
 ```yaml
