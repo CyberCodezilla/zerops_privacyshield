@@ -1,6 +1,7 @@
 import { PolicyProfile } from './policy';
 import { detectContextualPII, NemotronEntitySpan } from './nemotronEngine';
 import { knowledgeEngine } from './knowledgeEngine';
+import { detectUserLanguage, getSystemLanguageInstruction, SupportedLanguage } from './language';
 
 /**
  * PrivacyShield Hybrid PII & Secret Redaction Engine
@@ -8,17 +9,52 @@ import { knowledgeEngine } from './knowledgeEngine';
  * ARCHITECTURE & DETECTION STRATEGY:
  * 
  * 1. Tier 1: Sub-Millisecond Deterministic Layer:
- *    - 1A. In-Memory Bloom Filter (<0.1ms lookups for 1,000,000 internal asset codenames, keys, MRNs)
- *    - 1B. High-Coverage Pattern Matrix (Provider-specific regexes for GCP, AWS, GitHub, Stripe, Slack, RSA)
- *    - 1C. Shannon Entropy Analyzer (Flagging statistical randomness H(X) > 4.3 on contiguous tokens >= 16 chars)
+ *    - 1A. In-Memory Bloom Filter (<0.1ms lookups for internal asset codenames, keys, MRNs)
+ *    - 1B. 22+ Provider-Specific High-Coverage Pattern Scanners (GCP, AWS, GitHub, Stripe, Slack, RSA, Banking, Government IDs)
+ *    - 1C. Shannon Entropy Analyzer (Flagging statistical randomness H(X) > 3.8 / 4.3 on contiguous tokens >= 16 chars)
  * 
  * 2. Tier 2: Dynamic Contextual ML Layer (NVIDIA GLiNER / Nemotron Microservice):
  *    - Asynchronous ML span extraction via detectContextualPII for complex entity context.
  *    - Merges ML entity spans with deterministic results prior to token substitution.
+ * 
+ * 3. Native Multilingual Reasoning & Token Immunity Layer:
+ *    - Culture-aware prompt instruction injection for Hindi/Marathi/Hinglish/Minglish context.
  */
 
+export type PIIType = 
+  | 'SSN'
+  | 'CREDIT_CARD'
+  | 'SECRET_KEY'
+  | 'EMAIL'
+  | 'PHONE'
+  | 'PHI_NAME'
+  | 'DB_CONNECTION_STRING'
+  | 'HIGH_ENTROPY_SECRET'
+  | 'KNOWLEDGE_BASE_MATCH'
+  | 'PRIVATE_KEY'
+  | 'DATABASE_URI'
+  | 'AWS_ACCESS_KEY'
+  | 'AWS_SECRET_KEY'
+  | 'OPENAI_API_KEY'
+  | 'ANTHROPIC_API_KEY'
+  | 'GITHUB_TOKEN'
+  | 'SLACK_WEBHOOK'
+  | 'SLACK_BOT_TOKEN'
+  | 'GCP_API_KEY'
+  | 'STRIPE_KEY'
+  | 'SENDGRID_API_KEY'
+  | 'TWILIO_API_KEY'
+  | 'PASSWORD_ASSIGNMENT'
+  | 'HINGLISH_SECRET_JARGON'
+  | 'JWT_BEARER'
+  | 'AADHAAR_CARD'
+  | 'PAN_CARD'
+  | 'IBAN_NUMBER'
+  | 'SWIFT_BIC'
+  | 'IP_ADDRESS';
+
 export interface PIIMatch {
-  type: 'SSN' | 'CREDIT_CARD' | 'SECRET_KEY' | 'EMAIL' | 'PHONE' | 'PHI_NAME' | 'DB_CONNECTION_STRING' | 'HIGH_ENTROPY_SECRET' | 'KNOWLEDGE_BASE_MATCH';
+  type: PIIType;
   placeholder: string;
   originalValue: string;
   startIndex: number;
@@ -32,18 +68,209 @@ export interface SanitizationResult {
   detectedPiiTypes: string[];
   tokensRedactedCount: number;
   latencyMs: number;
+  detectedLanguage?: SupportedLanguage;
+  languageInstruction?: string;
 }
 
-// Extended Provider Secret Patterns
+// 22+ Extended Provider & Secret High-Sensitivity Patterns
 export const EXTENDED_SECRET_PATTERNS = [
-  { label: 'SECRET_KEY', regex: /\b(sk|pk)_(test|live)_[0-9a-zA-Z]{24,99}\b/g },
-  { label: 'SECRET_KEY', regex: /\bsk[-_][a-zA-Z0-9_-]{20,}\b/gi },
-  { label: 'SECRET_KEY', regex: /\b(ghp|gho|ghu|ghs|ghr)_[a-zA-Z0-9]{36,255}\b/g },
-  { label: 'SECRET_KEY', regex: /xox[baprs]-[0-9a-zA-Z]{10,48}/g },
-  { label: 'SECRET_KEY', regex: /\bAIza[0-9A-Za-z-_]{35}\b/g },
-  { label: 'SECRET_KEY', regex: /Bearer\s+[a-zA-Z0-9_\-\.=]{20,}/gi },
-  { label: 'SECRET_KEY', regex: /-----BEGIN (?:RSA|EC|OPENSSH|PRIVATE) KEY-----[\s\S]*?-----END (?:RSA|EC|OPENSSH|PRIVATE) KEY-----/g },
-  { label: 'SECRET_KEY', regex: /(?:api_key|secret|token|password|auth_token)\s*[:=]\s*["']?([a-zA-Z0-9_\-\.]{16,})["']?/gi }
+  // 1. RSA / OpenSSH / EC / PGP PRIVATE KEYS
+  {
+    label: 'PRIVATE_KEY',
+    regex: /-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----/gi,
+    replacementLabel: '[RSA_PRIVATE_KEY_REDACTED]',
+    confidence: 100.0,
+    risk: 'CRITICAL'
+  },
+  // 2. DATABASE CONNECTION URIS (JDBC, Postgres, MySQL, MongoDB, Redis, Oracle)
+  {
+    label: 'DB_CONNECTION_STRING',
+    regex: /(?:jdbc:)?(?:postgresql|postgres|mysql|mongodb|mongodb\+srv|redis|oracle|mssql):\/\/[a-zA-Z0-9_]+:[^@\s]+@[a-zA-Z0-9_.-]+:\d+\/[a-zA-Z0-9_.-]+/gi,
+    replacementLabel: '[DATABASE_URI_REDACTED]',
+    confidence: 100.0,
+    risk: 'CRITICAL'
+  },
+  // 3. AWS ACCESS KEY ID & SECRET KEY
+  {
+    label: 'SECRET_KEY',
+    regex: /\b(AKIA|ASIA|ABIA|ACCA)[0-9A-Z]{16}\b/g,
+    replacementLabel: '[AWS_ACCESS_KEY_REDACTED]',
+    confidence: 100.0,
+    risk: 'CRITICAL'
+  },
+  {
+    label: 'SECRET_KEY',
+    regex: /(?:aws_secret_access_key|Secret Access Key|SecretKey|aws_secret)\s*[:=]\s*["']?([a-zA-Z0-9\/+]{40})["']?/gi,
+    replacementLabel: '[AWS_SECRET_KEY_REDACTED]',
+    confidence: 99.8,
+    risk: 'CRITICAL'
+  },
+  // 4. OPENAI API KEYS
+  {
+    label: 'SECRET_KEY',
+    regex: /\bsk-(?:proj-|admin-)?[a-zA-Z0-9_-]{32,128}\b/g,
+    replacementLabel: '[OPENAI_API_KEY_REDACTED]',
+    confidence: 100.0,
+    risk: 'CRITICAL'
+  },
+  // 5. ANTHROPIC CLAUDE API KEYS
+  {
+    label: 'SECRET_KEY',
+    regex: /\bsk-ant-api[0-9a-zA-Z-_]{60,128}\b/g,
+    replacementLabel: '[ANTHROPIC_API_KEY_REDACTED]',
+    confidence: 100.0,
+    risk: 'CRITICAL'
+  },
+  // 6. GITHUB TOKENS & PATs
+  {
+    label: 'SECRET_KEY',
+    regex: /\b(ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9_]{36,255}\b/g,
+    replacementLabel: '[GITHUB_TOKEN_REDACTED]',
+    confidence: 100.0,
+    risk: 'CRITICAL'
+  },
+  // 7. SLACK WEBHOOKS & BOT TOKENS
+  {
+    label: 'SECRET_KEY',
+    regex: /https:\/\/hooks\.slack\.com\/services\/T[a-zA-Z0-9_]+\/B[a-zA-Z0-9_]+\/[a-zA-Z0-9_]+/g,
+    replacementLabel: '[SLACK_WEBHOOK_REDACTED]',
+    confidence: 99.9,
+    risk: 'CRITICAL'
+  },
+  {
+    label: 'SECRET_KEY',
+    regex: /\bxox[baprs]-[a-zA-Z0-9_-]{10,255}\b/g,
+    replacementLabel: '[SLACK_TOKEN_REDACTED]',
+    confidence: 99.9,
+    risk: 'CRITICAL'
+  },
+  // 8. GCP API KEYS
+  {
+    label: 'SECRET_KEY',
+    regex: /\bAIza[0-9A-Za-z-_]{35}\b/g,
+    replacementLabel: '[GCP_API_KEY_REDACTED]',
+    confidence: 99.7,
+    risk: 'CRITICAL'
+  },
+  // 9. STRIPE KEYS
+  {
+    label: 'SECRET_KEY',
+    regex: /\b(sk|pk|rk)_(test|live)_[0-9a-zA-Z]{24,99}\b/g,
+    replacementLabel: '[STRIPE_KEY_REDACTED]',
+    confidence: 99.8,
+    risk: 'CRITICAL'
+  },
+  // 10. SENDGRID & TWILIO KEYS
+  {
+    label: 'SECRET_KEY',
+    regex: /\bSG\.[a-zA-Z0-9_-]{22}\.[a-zA-Z0-9_-]{43}\b/g,
+    replacementLabel: '[SENDGRID_KEY_REDACTED]',
+    confidence: 99.9,
+    risk: 'CRITICAL'
+  },
+  {
+    label: 'SECRET_KEY',
+    regex: /\b(AC|SK)[a-f0-9]{32}\b/g,
+    replacementLabel: '[TWILIO_KEY_REDACTED]',
+    confidence: 99.5,
+    risk: 'CRITICAL'
+  },
+  // 11. HARDCODED PASSWORDS & ASSIGNMENT STATEMENTS
+  {
+    label: 'SECRET_KEY',
+    regex: /(?:password|passwd|pass|pwd|api_secret|auth_secret)\s*[:=]\s*["']([^"'\s]{6,64})["']/gi,
+    replacementLabel: '[PASSWORD_REDACTED]',
+    confidence: 99.2,
+    risk: 'CRITICAL'
+  },
+  // 12. HINGLISH / MINGLISH SENSITIVE JARGON ASSIGNMENTS
+  {
+    label: 'SECRET_KEY',
+    regex: /(?:chabi|chabhi|khufia_code|gupta_key|chupi_key)\s*[:=]\s*["']?([^"'\s]{6,64})["']?/gi,
+    replacementLabel: '[HINGLISH_SECRET_REDACTED]',
+    confidence: 98.9,
+    risk: 'CRITICAL'
+  },
+  // 13. JWT & BEARER TOKENS
+  {
+    label: 'SECRET_KEY',
+    regex: /Bearer\s+eyJ[a-zA-Z0-9_\-\.=]{20,}/gi,
+    replacementLabel: '[JWT_TOKEN_REDACTED]',
+    confidence: 99.6,
+    risk: 'CRITICAL'
+  },
+  // 14. AADHAAR CARD (India 12-Digit UIDAI)
+  {
+    label: 'SECRET_KEY',
+    regex: /\b[2-9]{1}\d{3}\s?\d{4}\s?\d{4}\b/g,
+    replacementLabel: '[AADHAAR_NUMBER_REDACTED]',
+    confidence: 98.5,
+    risk: 'CRITICAL'
+  },
+  // 15. PAN CARD (India 10-Char Tax ID)
+  {
+    label: 'SECRET_KEY',
+    regex: /\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b/g,
+    replacementLabel: '[PAN_CARD_REDACTED]',
+    confidence: 99.1,
+    risk: 'CRITICAL'
+  },
+  // 16. IBAN BANK ACCOUNT NUMBERS
+  {
+    label: 'SECRET_KEY',
+    regex: /\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/g,
+    replacementLabel: '[IBAN_REDACTED]',
+    confidence: 98.8,
+    risk: 'HIGH'
+  },
+  // 17. SWIFT / BIC CODES
+  {
+    label: 'SECRET_KEY',
+    regex: /\b[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?\b/g,
+    replacementLabel: '[SWIFT_BIC_REDACTED]',
+    confidence: 97.5,
+    risk: 'MEDIUM'
+  },
+  // 18. EMAIL ADDRESSES
+  {
+    label: 'EMAIL',
+    regex: /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g,
+    replacementLabel: '[EMAIL_REDACTED]',
+    confidence: 99.4,
+    risk: 'HIGH'
+  },
+  // 19. SOCIAL SECURITY NUMBERS (US SSN)
+  {
+    label: 'SSN',
+    regex: /\b\d{3}-\d{2}-\d{4}\b/g,
+    replacementLabel: '[SSN_REDACTED]',
+    confidence: 99.9,
+    risk: 'CRITICAL'
+  },
+  // 20. CREDIT CARDS
+  {
+    label: 'CREDIT_CARD',
+    regex: /\b(?:\d[ -]*?){13,19}\b/g,
+    replacementLabel: '[CREDIT_CARD_REDACTED]',
+    confidence: 99.8,
+    risk: 'CRITICAL'
+  },
+  // 21. PHONE NUMBERS
+  {
+    label: 'PHONE',
+    regex: /\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g,
+    replacementLabel: '[PHONE_REDACTED]',
+    confidence: 96.5,
+    risk: 'MEDIUM'
+  },
+  // 22. IP ADDRESSES
+  {
+    label: 'SECRET_KEY',
+    regex: /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g,
+    replacementLabel: '[IP_REDACTED]',
+    confidence: 97.8,
+    risk: 'LOW'
+  }
 ];
 
 /**
@@ -67,11 +294,10 @@ export function calculateEntropy(str: string): number {
  */
 export function detectHighEntropySpans(text: string): Array<{ start: number; end: number; text: string; label: string }> {
   const spans: Array<{ start: number; end: number; text: string; label: string }> = [];
-  const tokens = text.match(/\b[a-zA-Z0-9_\-\.]{16,}\b/g) || [];
+  const tokens = text.match(/\b[a-zA-Z0-9_\-\.]{16,128}\b/g) || [];
 
   for (const token of tokens) {
-    // Ignore standard formatted UUIDs or repetitive test strings
-    if (calculateEntropy(token) > 4.3) {
+    if (calculateEntropy(token) > 3.8 && /[0-9]/.test(token) && /[a-zA-Z]/.test(token)) {
       let startIndex = 0;
       while ((startIndex = text.indexOf(token, startIndex)) !== -1) {
         spans.push({
@@ -113,10 +339,10 @@ function mapNemotronLabelToPiiType(label: string): PIIMatch['type'] {
   const norm = label.toUpperCase();
   if (norm.includes('SSN') || norm.includes('SOCIAL_SECURITY')) return 'SSN';
   if (norm.includes('CREDIT') || norm.includes('CARD')) return 'CREDIT_CARD';
-  if (norm.includes('SECRET') || norm.includes('KEY')) return 'SECRET_KEY';
+  if (norm.includes('SECRET') || norm.includes('KEY') || norm.includes('TOKEN')) return 'SECRET_KEY';
   if (norm.includes('EMAIL')) return 'EMAIL';
   if (norm.includes('PHONE')) return 'PHONE';
-  if (norm.includes('DB') || norm.includes('CONNECTION')) return 'DB_CONNECTION_STRING';
+  if (norm.includes('DB') || norm.includes('CONNECTION') || norm.includes('CREDENTIAL')) return 'DB_CONNECTION_STRING';
   return 'PHI_NAME';
 }
 
@@ -149,10 +375,15 @@ interface InternalSpan {
  */
 export async function redactPII(
   inputText: string,
-  profile: PolicyProfile = PolicyProfile.BALANCED
+  profile: PolicyProfile = PolicyProfile.BALANCED,
+  selectedLanguage?: string
 ): Promise<SanitizationResult> {
   const startTime = performance.now();
   const rawSpans: InternalSpan[] = [];
+
+  // Language Detection & Instruction Injection
+  const lang = detectUserLanguage(inputText, selectedLanguage);
+  const langInstruction = getSystemLanguageInstruction(lang);
 
   // 1A. Sub-0.1ms In-Memory Bloom Filter Knowledge Base Lookup
   try {
@@ -195,10 +426,6 @@ export async function redactPII(
   for (const item of EXTENDED_SECRET_PATTERNS) {
     collectRegexSpans(item.regex, item.label as PIIMatch['type']);
   }
-
-  collectRegexSpans(/\bAKIA[0-9A-Z]{16}\b/g, 'SECRET_KEY');
-  collectRegexSpans(/\beyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\b/g, 'SECRET_KEY');
-  collectRegexSpans(/\b(?:postgres|postgresql|mongodb|mysql):\/\/[a-zA-Z0-9_]+:[^@\s]+@[a-zA-Z0-9_.-]+:\d+\/[a-zA-Z0-9_.-]+\b/g, 'DB_CONNECTION_STRING');
 
   // 1C. Sub-1.0ms Shannon Entropy Analyzer
   const entropySpans = detectHighEntropySpans(inputText);
@@ -316,9 +543,10 @@ export async function redactPII(
     tokenMap,
     detectedPiiTypes: Array.from(detectedTypesSet),
     tokensRedactedCount: tokenMap.size,
-    latencyMs
+    latencyMs,
+    detectedLanguage: lang,
+    languageInstruction: langInstruction
   };
 }
 
 export const scanAndSanitize = redactPII;
-

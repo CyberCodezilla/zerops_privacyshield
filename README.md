@@ -1,104 +1,121 @@
-# PrivacyShield: Zero-Trust AI Proxy Gateway & Compliance Dashboard
+# 🛡️ PrivacyShield — Zero-Trust Real-Time PII & Secret Redaction Gateway
+
+> **Empowering Enterprise AI Adoption with Zero Data Leakage.**  
+> PrivacyShield is a high-performance, multi-service privacy proxy middleware and compliance dashboard deployed on **Zerops** that automatically detects, sanitizes, and redacts sensitive data (PII, PHI, credentials, high-entropy secrets, and government IDs) before it leaves the client browser or API layer.
 
 [![Zerops Approved](https://img.shields.io/badge/Zerops-Deploy_Ready-6366f1)](https://zerops.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Compliance](https://img.shields.io/badge/Compliance-GDPR_|_HIPAA_|_PCI--DSS-10b981)](#compliance)
-
-**PrivacyShield** is an open-source, zero-trust AI proxy middleware and compliance dashboard designed to prevent Personally Identifiable Information (PII), Protected Health Information (PHI), API secret keys, and enterprise intellectual property from leaking into external LLM APIs (OpenAI, Anthropic, Gemini, etc.).
-
-It acts as a transparent, drop-in replacement gateway compatible with standard LLM SDKs (`baseURL`), redacting sensitive data in under 10ms using deterministic token substitution, forwarding sanitized payloads upstream, and rehydrating responses before returning them to the caller.
+[![Node.js](https://img.shields.io/badge/Node.js-v22-339933?style=for-the-badge&logo=nodedotjs)](https://nodejs.org)
+[![Python](https://img.shields.io/badge/Python-v3.11-3776AB?style=for-the-badge&logo=python)](https://python.org)
+[![Manifest V3](https://img.shields.io/badge/Chrome_Extension-Manifest_V3-4285F4?style=for-the-badge&logo=googlechrome)](https://developer.chrome.com/docs/extensions)
 
 ---
 
-## 🚀 Key Features
+## ⚡ Feature Glimpse (Real-Time Redaction in Action)
 
-- **Drop-In OpenAI Proxy Compatibility**: Intercepts `POST /v1/chat/completions` with streaming (SSE) and non-streaming support.
-- **Deterministic PII & Secret Redaction Engine**:
-  - **SSN**: US Social Security Numbers (`XXX-XX-XXXX`).
-  - **Payment Cards (PCI)**: Luhn-validated 13–19 digit strings (Visa, Mastercard, Amex, Discover).
-  - **Secrets & API Keys**: `sk_live_*`, `AKIA*`, JWT patterns, database connection strings (`postgresql://`, `mongodb://`, `mysql://`).
-  - **RFC 5322 Email & Phone Numbers**: Standard pattern matching.
-  - **Healthcare PHI**: Patient names, MRNs (`MRN-XXXXXX`).
+| Inbound Prompt (ChatGPT / Claude / Gemini) | PrivacyShield Intercept & Redaction |
+| :--- | :--- |
+| `DB: postgresql://admin:P@ssw0rd!2026@db.internal:5432/prod` | `DB: [DATABASE_URI_REDACTED]` |
+| `AWS Key: AKIAIOSFODNN7EXAMPLE` | `AWS Key: [AWS_ACCESS_KEY_REDACTED]` |
+| `GitHub PAT: ghp_1234567890abcdefghijklmnopqrstuvwxyz` | `GitHub PAT: [GITHUB_TOKEN_REDACTED]` |
+| `Aadhaar Card: 9876 5432 1098` | `Aadhaar Card: [AADHAAR_NUMBER_REDACTED]` |
+| `PAN Card: ABCDE1234F` | `PAN Card: [PAN_CARD_REDACTED]` |
+| `SSN: 000-12-3456` | `SSN: [SSN_REDACTED]` |
+| `Patient Jane Doe (MRN: 987654)` | `Patient [PHI_NAME_REDACTED_1] (MRN: [PHI_NAME_REDACTED_2])` |
+
+---
+
+## 🚀 Key Features & Architectural Highlights
+
+- **Drop-In OpenAI Proxy Compatibility**: Intercepts `POST /v1/chat/completions` with full streaming (SSE) and non-streaming support.
+- ⚡ **Tier 1 High-Speed Engine (Sub-1ms):** Fastify Node.js service executing 22+ priority regex matchers, in-memory Bloom filter lookups, and Shannon Entropy analysis ($H(X) > 3.8$) to catch raw keys, DB URIs, JWTs, and code-block hashes under 1 millisecond.
+- 🧠 **Tier 2 GLiNER Zero-Shot ML Engine:** Dedicated Python 3.11 FastAPI microservice using GLiNER models (tuned at `0.22` threshold) for contextual PII (`DOCTOR_NAME`, `MEDICAL_FACILITY`, `STREET_ADDRESS`, `MEDICAL_RECORD_NUMBER`).
+- 🌐 **Native Multilingual Reasoning Engine:** Injector system that preserves Hinglish/Minglish technical terms (`Database`, `Timeout`, `Server`) in Hindi/Marathi without translating redaction tokens or distorting logic.
+- 🖼️ **OCR Image Scanner:** In-browser and web interface document engine extracting and sanitizing text from uploaded screenshots containing credentials or government IDs.
+- 🧩 **Universal Chrome Extension (Manifest V3):** Injectable content scripts matching universal DOM selectors across ChatGPT, Claude, Gemini, Perplexity, DeepSeek, and custom chat interfaces. Includes an **Interactive Threat Alert Overlay Modal**.
+- 📊 **Audit Ledger & Threat Analytics:** Compliance dashboard with risk severity scoring (0–100), origin tracking, downloadable JSON transaction certificates, and `?txId=` deep-linked synchronization.
 - **Session State & Response Rehydration**: Isolated per-request token dictionary (`[TOKEN] -> OriginalValue`) restores sensitive data in completions while enforcing a strict **Zero-Persistence Policy** (RAM only).
-- **Audit Log Ledger & PostgreSQL Store**: Structured, zero-PII audit trail capturing client IP, PII types detected, redacted token count, proxy latency (ms), and sanitized prompts.
-- **Interactive 3-Panel Playground**: Real-time visual sandbox comparing unsanitized input, sanitized payload passed upstream, and rehydrated response delivered to the client.
-- **Zerops Footprint Ready**: Pre-configured `import.yaml` and `zerops.yaml` for instant single-click cloud deployment on Zerops.
 
 ---
 
-## 📐 System Architecture
+## 📐 System Architecture & Zerops Topology
 
 ```
-                  +-------------------------------------------------------------+
-                  |                 Zerops Managed Environment                  |
-                  |                                                             |
-                  |  +------------------+             +----------------------+  |
-                  |  | Static Container |             | PostgreSQL Service   |  |
-                  |  |  (apps/web)      |             | (db)                 |  |
-                  |  |  React Dashboard |             | Audit Log Store      |  |
-                  |  +--------+---------+             +----------^-----------+  |
-                  |           |                                  |              |
-                  |           | REST/WS                          | DB Client    |
-                  |           v                                  |              |
-+--------------+  |  +-------------------------------------------+-----------+  |    Sanitized
-| Client App / |  |  | Node.js Container (apps/api)                          |  |    Request      +---------------+
-| OpenAI SDK   +-----> Intercept -> PII Engine -> Tokenize -> Audit Log      +-------------------> External LLM   |
-|              <-----+ De-tokenize <- Rehydrate Response                     <-------------------+ API (OpenAI)   |
-+--------------+  |  +-------------------------------------------------------+  |    Raw Response +---------------+
-  Drop-in API     |                                                             |
-  (`baseURL`)     +-------------------------------------------------------------+
+┌────────────────────────────────────────────────────────────────────────┐
+│                        CLIENT / EXTENSION LAYER                        │
+│   (Chrome Extension / React SPA Dashboard / OpenAI SDK Client)         │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ HTTP / SSE / WebSocket Intercept
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                    ZEROPS API PROXY SERVICE (api)                      │
+│   - Runtime: Node.js 22 (Fastify Monorepo Service)                     │
+│   - Task: Tier-1 Regex + Shannon Entropy + Bloom Filter + Audit Log    │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ Fallback for Complex Contextual PII
+                                    │ Container DNS: http://nerengine:8000
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                  ZEROPS NER ML MICROSERVICE (nerengine)                │
+│   - Runtime: Python 3.11 (FastAPI + PyTorch)                           │
+│   - Task: Tier-2 GLiNER Entity Extraction                              │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## ☁️ Zerops Deployment Configuration
+## 🔌 Chrome Extension Installation & Setup
 
-### 1. `import.yaml`
-```yaml
-project:
-  name: privacyshield
-  services:
-    - hostname: api
-      type: nodejs@20
-      mode: NON_HA
-      verticalAutoscaling:
-        minCpu: 1
-        maxCpu: 2
-        minRam: 0.25
-        maxRam: 0.5
-      enableSubdomainAccess: true
+Follow these steps to load and configure the extension on Google Chrome:
 
-    - hostname: web
-      type: static
-      enableSubdomainAccess: true
+### 1. Extract Extension Files
+1. Download `privacy-shield-extension.zip` directly from the web dashboard or project root.
+2. Extract the `.zip` file into a local folder.
 
-    - hostname: db
-      type: postgresql@16
-      mode: NON_HA
-```
+### 2. Load Unpacked in Chrome
+1. Open Google Chrome and navigate to `chrome://extensions/`.
+2. Enable **Developer mode** using the toggle switch in the top-right corner.
+3. Click **Load unpacked**.
+4. Select the extracted `privacy-shield-extension` directory (containing `manifest.json`).
 
-### 2. `zerops.yaml`
+### 3. Connect to Production Gateway
+1. Click the **PrivacyShield** icon in your Chrome toolbar.
+2. Verify the **API Base URL** points to your local or Zerops gateway (`http://localhost:3000`).
+3. Open ChatGPT, Claude, Gemini, or DeepSeek and experience real-time redaction!
+
+---
+
+## 🛠️ Zerops Deployment Guide (Infrastructure-as-Code)
+
+### 1. `zerops.yaml` Configuration
+The project root contains the unified deployment manifest:
+
 ```yaml
 zerops:
   - setup: api
     build:
-      base: nodejs@20
+      base: nodejs@22
       buildCommands:
         - npm install
         - npm run build --workspace=apps/api
       deployFiles:
-        - apps/api/dist/~
+        - apps/api/dist
         - apps/api/package.json
         - package.json
+        - node_modules
     run:
-      base: nodejs@20
+      base: nodejs@22
       ports:
         - port: 3000
-      start: node apps/api/dist/index.js
+          httpSupport: true
+      start: npm run start --workspace=apps/api
+      envVariables:
+        NER_SERVICE_URL: http://nerengine:8000
 
   - setup: web
     build:
-      base: nodejs@20
+      base: nodejs@22
       buildCommands:
         - npm install
         - npm run build --workspace=apps/web
@@ -106,6 +123,25 @@ zerops:
         - apps/web/dist/~
     run:
       base: static
+
+  - setup: nerengine
+    build:
+      base: python@3.11
+      buildCommands:
+        - python -m venv venv
+        - . venv/bin/activate
+        - pip install --no-cache-dir -r apps/ner-service/requirements.txt
+      deployFiles:
+        - apps/ner-service
+        - venv
+    run:
+      base: python@3.11
+      ports:
+        - port: 8000
+          httpSupport: true
+      start: |
+        . venv/bin/activate
+        python -m uvicorn apps.ner-service.main:app --host 0.0.0.0 --port 8000
 ```
 
 ---
@@ -161,5 +197,24 @@ const openai = new OpenAI({
 
 ---
 
-## 📄 License
-Licensed under the MIT License.
+## 🧪 Testing the API Gateway
+
+You can test redaction directly against the gateway using `curl`:
+
+```bash
+curl -X POST http://localhost:3000/api/sanitize \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Database string: postgresql://admin:P@ssw0rd123@db.internal:5432/prod. AWS Key: AKIAIOSFODNN7EXAMPLE. Aadhaar: 9876 5432 1098.",
+    "selectedLanguage": "auto",
+    "source": "CLI TEST"
+  }'
+```
+
+---
+
+## 📄 License & Contact
+
+Distributed under the **MIT License**. Developed for technical evaluation by **CyberCodezilla** (`sahil.s.rane13012007@gmail.com`).
+
+*Deployed with ❤️ on [Zerops Cloud Platform](https://zerops.io)*

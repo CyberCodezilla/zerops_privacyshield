@@ -1,7 +1,7 @@
 zerops:
   - setup: api
     build:
-      base: nodejs@20
+      base: nodejs@22
       buildCommands:
         - npm install
         - npm run build --workspace=apps/api
@@ -11,7 +11,7 @@ zerops:
         - package.json
         - node_modules
     run:
-      base: nodejs@20
+      base: nodejs@22
       ports:
         - port: 3000
           httpSupport: true
@@ -21,7 +21,7 @@ zerops:
 
   - setup: web
     build:
-      base: nodejs@20
+      base: nodejs@22
       buildCommands:
         - npm install
         - npm run build --workspace=apps/web
@@ -40,6 +40,8 @@ zerops:
       deployFiles:
         - apps/ner-service
         - venv
+      cache:
+        - ~/.cache/pip
     run:
       base: python@3.11
       ports:

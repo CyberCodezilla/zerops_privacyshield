@@ -1,20 +1,29 @@
 {
   "manifest_version": 3,
-  "name": "PrivacyShield — Zero-Trust AI Privacy",
-  "version": "1.0.0",
-  "description": "Client-side Zero-Knowledge PII & Secret Redaction for ChatGPT and Claude",
+  "name": "PrivacyShield — Universal Zero-Trust AI Guard",
+  "version": "2.0.0",
+  "description": "Zero-Trust Real-Time PII & Secret Redaction Guard for ChatGPT, Claude, Gemini, Perplexity, DeepSeek, and custom AI platforms.",
   "action": {
     "default_popup": "src/popup/index.html",
-    "default_title": "PrivacyShield Options & Status"
+    "default_title": "PrivacyShield Options & Status",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
   },
   "permissions": [
     "storage",
     "activeTab"
   ],
   "host_permissions": [
-    "https://chatgpt.com/*",
-    "https://chat.openai.com/*",
-    "https://claude.ai/*",
+    "*://*.openai.com/*",
+    "*://*.chatgpt.com/*",
+    "*://*.claude.ai/*",
+    "*://*.google.com/*",
+    "*://*.perplexity.ai/*",
+    "*://*.deepseek.com/*",
+    "*://*.zerops.app/*",
     "http://localhost:3000/*",
     "http://127.0.0.1:3000/*",
     "http://127.0.0.1:8000/*",
@@ -27,6 +36,12 @@
   "content_scripts": [
     {
       "matches": [
+        "*://*.openai.com/*",
+        "*://*.chatgpt.com/*",
+        "*://*.claude.ai/*",
+        "*://*.google.com/*",
+        "*://*.perplexity.ai/*",
+        "*://*.deepseek.com/*",
         "https://chatgpt.com/*",
         "https://chat.openai.com/*",
         "https://claude.ai/*"

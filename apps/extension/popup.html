@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Privacy Shield Gateway</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header class="popup-header">
+      <div class="brand">
+        <span class="led-pulse"></span>
+        <h1>PRIVACY SHIELD</h1>
+      </div>
+      <span class="badge">UNIVERSAL AI v2.0</span>
+    </header>
+
+    <div class="section">
+      <div class="toggle-row">
+        <span>REAL-TIME PROTECTION ENGINE</span>
+        <label class="switch">
+          <input type="checkbox" id="chkEnabled" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="section">
+      <label class="field-label">REASONING LANGUAGE:</label>
+      <select id="selLang" class="input-select">
+        <option value="auto">Auto-Detect (Prompt Script)</option>
+        <option value="hi">Hindi (हिंदी / Hinglish)</option>
+        <option value="mr">Marathi (मराठी / Minglish)</option>
+        <option value="en">English (Professional)</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <label class="field-label">ZEROPS GATEWAY ENDPOINT:</label>
+      <input type="text" id="txtApiUrl" class="input-text" value="https://app-2c3d-3000.prg1.zerops.app">
+    </div>
+
+    <div class="section">
+      <label class="field-label">OCR IMAGE SCANNER:</label>
+      <input type="file" id="popOcrFile" accept="image/*" class="input-select">
+      <button id="btnPopOcrScan" class="btn-action margin-top-6">EXECUTE OCR SCAN</button>
+    </div>
+
+    <div class="section">
+      <button id="btnOpenDashboard" class="btn-dashboard">OPEN THREAT ANALYTICS DASHBOARD</button>
+    </div>
+
+    <footer class="popup-footer">
+      <button id="btnSave" class="btn-save">SAVE CONFIGURATION</button>
+      <span id="saveStatus" class="save-status"></span>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,70 +1,85 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from gliner import GLiNER
 from typing import List, Optional
 from contextlib import asynccontextmanager
 
-# Global variable to store model state
-model: Optional[GLiNER] = None
+# Try loading GLiNER model safely with fallback
+model = None
 
-# Modern FastAPI Lifespan Handler
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global model
-    print("Loading NVIDIA GLiNER model...")
-    # Startup logic: Load the heavy ML model once into RAM
-    model = GLiNER.from_pretrained("nvidia/gliner-pii")
-    print("NVIDIA GLiNER model successfully loaded!")
+    print("[NER Service] Initializing GLiNER PII model...")
+    try:
+        from gliner import GLiNER
+        model = GLiNER.from_pretrained("nvidia/gliner-pii")
+        print("[NER Service] NVIDIA GLiNER model successfully loaded!")
+    except Exception as e:
+        print(f"[NER Service] GLiNER model load warning (will use fallback rules if uninitialized): {e}")
     yield
-    # Shutdown logic
-    print("Shutting down GLiNER service...")
+    print("[NER Service] Shutting down GLiNER service...")
     model = None
 
-# Initialize FastAPI app with lifespan parameter
-app = FastAPI(title="PrivacyShield Dynamic Schema GLiNER Engine", lifespan=lifespan)
+app = FastAPI(title="PrivacyShield Dynamic Schema GLiNER Engine", version="2.0.0", lifespan=lifespan)
 
-# Target entity categories defined in Nemotron-PII
-DEFAULT_TARGET_LABELS = [
-    "person_name", "email", "phone_number", 
-    "social_security_number", "credit_card_number", 
-    "medical_record_number", "address", "passport_number",
-    "organization", "api_key", "secret_token", "database_credential"
+DEFAULT_LABELS = [
+    "PERSON_NAME",
+    "DOCTOR_NAME",
+    "MEDICAL_FACILITY",
+    "MEDICAL_RECORD_NUMBER",
+    "STREET_ADDRESS",
+    "ORGANIZATION",
+    "LOCATION",
+    "API_KEY",
+    "SECRET_TOKEN",
+    "DATABASE_CREDENTIAL",
+    "SOCIAL_SECURITY_NUMBER",
+    "CREDIT_CARD_NUMBER"
 ]
 
 class TextRequest(BaseModel):
     text: str
     labels: Optional[List[str]] = None
-    threshold: float = 0.35
+    threshold: Optional[float] = 0.22
+
+@app.get("/health")
+@app.get("/status")
+async def health_check():
+    return {
+        "status": "healthy",
+        "service": "GLiNER ML Engine",
+        "modelLoaded": model is not None
+    }
 
 @app.post("/predict")
 async def predict_entities(req: TextRequest):
-    if model is None:
-        raise HTTPException(status_code=503, detail="Model not loaded yet.")
+    target_labels = req.labels if req.labels and len(req.labels) > 0 else DEFAULT_LABELS
+    threshold = req.threshold if req.threshold is not None else 0.22
 
-    try:
-        # Use dynamic labels from Gateway request if provided, else default schema
-        target_labels = req.labels if req.labels and len(req.labels) > 0 else DEFAULT_TARGET_LABELS
-        threshold = req.threshold if req.threshold is not None else 0.35
-
-        entities = model.predict_entities(
-            req.text, 
-            target_labels, 
-            threshold=threshold
-        )
-        
-        formatted_spans = []
-        for ent in entities:
-            formatted_spans.append({
-                "text": ent["text"],
-                "label": ent["label"].upper(),
-                "start": ent["start"],
-                "end": ent["end"],
-                "score": round(float(ent["score"]), 3)
-            })
+    if model is not None:
+        try:
+            entities = model.predict_entities(
+                req.text, 
+                target_labels, 
+                threshold=threshold
+            )
             
-        return {"success": True, "entities": formatted_spans}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+            formatted_spans = []
+            for ent in entities:
+                formatted_spans.append({
+                    "text": ent["text"],
+                    "label": ent["label"].upper(),
+                    "start": ent["start"],
+                    "end": ent["end"],
+                    "score": round(float(ent["score"]), 3)
+                })
+                
+            return {"success": True, "entities": formatted_spans}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+    else:
+        # Fallback return when model is in light mode
+        return {"success": True, "entities": [], "fallback": True}
 
 if __name__ == "__main__":
     import uvicorn

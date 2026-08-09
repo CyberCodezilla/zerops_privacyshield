@@ -1,8 +1,9 @@
 {
   "name": "privacyshield-monorepo",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Zero-trust AI proxy middleware and compliance dashboard for Zerops",
+  "description": "Privacy Shield — Zero-Trust Real-Time PII & Secret Redaction Gateway & Compliance Dashboard for Zerops",
+  "main": "index.js",
   "workspaces": [
     "apps/*"
   ],
@@ -11,7 +12,8 @@
     "dev": "npm run dev:api & npm run dev:web",
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:web": "npm run dev --workspace=apps/web",
-    "start": "npm run start --workspace=apps/api"
+    "start": "npm run start --workspace=apps/api",
+    "start:node": "node index.js"
   },
   "keywords": [
     "ai",
@@ -21,6 +23,9 @@
     "zerops",
     "security"
   ],
-  "author": "PrivacyShield Team",
-  "license": "MIT"
+  "author": "CyberCodezilla",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2"
+  }
 }
