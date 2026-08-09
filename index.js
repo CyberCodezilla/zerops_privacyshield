@@ -120,8 +120,9 @@ function detectHighEntropySpans(text) {
   const tokens = text.match(/\b[a-zA-Z0-9_\-\.]{16,128}\b/g) || [];
 
   for (const token of tokens) {
+    if (token.startsWith('[') && token.endsWith(']')) continue;
     const entropy = calculateEntropy(token);
-    if (entropy > 3.8 && /[0-9]/.test(token) && /[a-zA-Z]/.test(token)) {
+    if (entropy > 3.7 && /[0-9]/.test(token) && /[a-zA-Z]/.test(token)) {
       spans.push({
         text: token,
         entropy: entropy.toFixed(2),
@@ -156,7 +157,7 @@ function sanitizeText(text, options = {}) {
       confidence: 100.0,
       risk: 'CRITICAL'
     },
-    // 3. AWS ACCESS KEY & SECRET KEY
+    // 3. AWS ACCESS KEY
     {
       type: 'AWS_ACCESS_KEY',
       pattern: /\b(AKIA|ASIA|ABIA|ACCA)[0-9A-Z]{16}\b/g,
@@ -164,14 +165,15 @@ function sanitizeText(text, options = {}) {
       confidence: 100.0,
       risk: 'CRITICAL'
     },
+    // 4. AWS SECRET KEY (All Label Variations: AWS Secret:, Secret Access Key:, aws_secret_access_key:, etc.)
     {
       type: 'AWS_SECRET_KEY',
-      pattern: /(?:aws_secret_access_key|Secret Access Key|SecretKey|aws_secret)\s*[:=]\s*["']?([a-zA-Z0-9\/+]{40})["']?/gi,
-      label: 'aws_secret_access_key: [AWS_SECRET_KEY_REDACTED]',
-      confidence: 99.8,
+      pattern: /(?:aws_secret_access_key|aws_secret_key|aws_secret|Secret Access Key|AWS Secret Key|AWS Secret)\s*[:=]\s*["']?([a-zA-Z0-9\/+=]{32,64})["']?/gi,
+      label: 'AWS Secret: [AWS_SECRET_KEY_REDACTED]',
+      confidence: 100.0,
       risk: 'CRITICAL'
     },
-    // 4. OPENAI API KEYS
+    // 5. OPENAI API KEYS
     {
       type: 'OPENAI_API_KEY',
       pattern: /\bsk-(?:proj-|admin-)?[a-zA-Z0-9_-]{32,128}\b/g,
@@ -179,7 +181,7 @@ function sanitizeText(text, options = {}) {
       confidence: 100.0,
       risk: 'CRITICAL'
     },
-    // 5. ANTHROPIC CLAUDE API KEYS
+    // 6. ANTHROPIC CLAUDE API KEYS
     {
       type: 'ANTHROPIC_API_KEY',
       pattern: /\bsk-ant-api[0-9a-zA-Z-_]{60,128}\b/g,
@@ -187,7 +189,7 @@ function sanitizeText(text, options = {}) {
       confidence: 100.0,
       risk: 'CRITICAL'
     },
-    // 6. GITHUB TOKENS & PATs
+    // 7. GITHUB TOKENS & PATs
     {
       type: 'GITHUB_TOKEN',
       pattern: /\b(ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9_]{36,255}\b/g,
@@ -195,7 +197,7 @@ function sanitizeText(text, options = {}) {
       confidence: 100.0,
       risk: 'CRITICAL'
     },
-    // 7. SLACK WEBHOOKS & BOT TOKENS
+    // 8. SLACK WEBHOOKS & BOT TOKENS
     {
       type: 'SLACK_WEBHOOK',
       pattern: /https:\/\/hooks\.slack\.com\/services\/T[a-zA-Z0-9_]+\/B[a-zA-Z0-9_]+\/[a-zA-Z0-9_]+/g,
@@ -210,7 +212,7 @@ function sanitizeText(text, options = {}) {
       confidence: 99.9,
       risk: 'CRITICAL'
     },
-    // 8. GCP API KEYS
+    // 9. GCP API KEYS
     {
       type: 'GCP_API_KEY',
       pattern: /\bAIza[0-9A-Za-z-_]{35}\b/g,
@@ -218,7 +220,7 @@ function sanitizeText(text, options = {}) {
       confidence: 99.7,
       risk: 'CRITICAL'
     },
-    // 9. STRIPE KEYS
+    // 10. STRIPE KEYS
     {
       type: 'STRIPE_KEY',
       pattern: /\b(sk|pk|rk)_(test|live)_[0-9a-zA-Z]{24,99}\b/g,
@@ -226,7 +228,7 @@ function sanitizeText(text, options = {}) {
       confidence: 99.8,
       risk: 'CRITICAL'
     },
-    // 10. SENDGRID & TWILIO KEYS
+    // 11. SENDGRID & TWILIO KEYS
     {
       type: 'SENDGRID_API_KEY',
       pattern: /\bSG\.[a-zA-Z0-9_-]{22}\.[a-zA-Z0-9_-]{43}\b/g,
@@ -241,15 +243,23 @@ function sanitizeText(text, options = {}) {
       confidence: 99.5,
       risk: 'CRITICAL'
     },
-    // 11. HARDCODED PASSWORDS & ASSIGNMENT STATEMENTS
+    // 12. GENERIC SECRET / API / APP KEYS & TOKENS
+    {
+      type: 'GENERIC_SECRET_KEY',
+      pattern: /(?:api_secret|client_secret|app_secret|secret_key|private_secret|auth_secret|access_secret)\s*[:=]\s*["']?([a-zA-Z0-9\/+_\-=]{16,128})["']?/gi,
+      label: 'Secret: "[SECRET_KEY_REDACTED]"',
+      confidence: 99.5,
+      risk: 'CRITICAL'
+    },
+    // 13. HARDCODED PASSWORDS & ASSIGNMENT STATEMENTS
     {
       type: 'PASSWORD_ASSIGNMENT',
-      pattern: /(?:password|passwd|pass|pwd|api_secret|auth_secret)\s*[:=]\s*["']([^"'\s]{6,64})["']/gi,
+      pattern: /(?:password|passwd|pass|pwd)\s*[:=]\s*["']([^"'\s]{6,64})["']/gi,
       label: 'password: "[PASSWORD_REDACTED]"',
       confidence: 99.2,
       risk: 'CRITICAL'
     },
-    // 12. HINGLISH / MINGLISH SENSITIVE JARGON ASSIGNMENTS
+    // 14. HINGLISH / MINGLISH SENSITIVE JARGON ASSIGNMENTS
     {
       type: 'HINGLISH_SECRET_JARGON',
       pattern: /(?:chabi|chabhi|khufia_code|gupta_key|chupi_key)\s*[:=]\s*["']?([^"'\s]{6,64})["']?/gi,
@@ -257,7 +267,7 @@ function sanitizeText(text, options = {}) {
       confidence: 98.9,
       risk: 'CRITICAL'
     },
-    // 13. JWT & BEARER TOKENS
+    // 15. JWT & BEARER TOKENS
     {
       type: 'JWT_BEARER',
       pattern: /Bearer\s+eyJ[a-zA-Z0-9_\-\.=]{20,}/gi,
@@ -265,7 +275,7 @@ function sanitizeText(text, options = {}) {
       confidence: 99.6,
       risk: 'CRITICAL'
     },
-    // 14. AADHAAR CARD (India 12-Digit UIDAI)
+    // 16. AADHAAR CARD (India 12-Digit UIDAI)
     {
       type: 'AADHAAR_CARD',
       pattern: /\b[2-9]{1}\d{3}\s?\d{4}\s?\d{4}\b/g,
@@ -273,7 +283,7 @@ function sanitizeText(text, options = {}) {
       confidence: 98.5,
       risk: 'CRITICAL'
     },
-    // 15. PAN CARD (India 10-Char Tax ID)
+    // 17. PAN CARD (India 10-Char Tax ID)
     {
       type: 'PAN_CARD',
       pattern: /\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b/g,
@@ -281,7 +291,7 @@ function sanitizeText(text, options = {}) {
       confidence: 99.1,
       risk: 'CRITICAL'
     },
-    // 16. IBAN BANK ACCOUNT NUMBERS
+    // 18. IBAN BANK ACCOUNT NUMBERS
     {
       type: 'IBAN_NUMBER',
       pattern: /\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/g,
@@ -289,7 +299,7 @@ function sanitizeText(text, options = {}) {
       confidence: 98.8,
       risk: 'HIGH'
     },
-    // 17. SWIFT / BIC CODES
+    // 19. SWIFT / BIC CODES
     {
       type: 'SWIFT_BIC',
       pattern: /\b[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?\b/g,
@@ -297,7 +307,7 @@ function sanitizeText(text, options = {}) {
       confidence: 97.5,
       risk: 'MEDIUM'
     },
-    // 18. EMAIL ADDRESSES
+    // 20. EMAIL ADDRESSES
     {
       type: 'EMAIL',
       pattern: /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g,
@@ -305,7 +315,7 @@ function sanitizeText(text, options = {}) {
       confidence: 99.4,
       risk: 'HIGH'
     },
-    // 19. SOCIAL SECURITY NUMBERS (US SSN)
+    // 21. SOCIAL SECURITY NUMBERS (US SSN)
     {
       type: 'SSN',
       pattern: /\b\d{3}-\d{2}-\d{4}\b/g,
@@ -313,7 +323,7 @@ function sanitizeText(text, options = {}) {
       confidence: 99.9,
       risk: 'CRITICAL'
     },
-    // 20. CREDIT CARDS
+    // 22. CREDIT CARDS
     {
       type: 'CREDIT_CARD',
       pattern: /\b(?:\d[ -]*?){13,19}\b/g,
@@ -328,7 +338,7 @@ function sanitizeText(text, options = {}) {
       confidence: 99.8,
       risk: 'CRITICAL'
     },
-    // 21. PHONE NUMBERS
+    // 23. PHONE NUMBERS
     {
       type: 'PHONE',
       pattern: /\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g,
@@ -336,7 +346,7 @@ function sanitizeText(text, options = {}) {
       confidence: 96.5,
       risk: 'MEDIUM'
     },
-    // 22. IP ADDRESSES
+    // 24. IP ADDRESSES
     {
       type: 'IP_ADDRESS',
       pattern: /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g,
@@ -383,17 +393,16 @@ function sanitizeText(text, options = {}) {
 
   const entropySpans = detectHighEntropySpans(sanitized);
   entropySpans.forEach((span) => {
-    if (!sanitized.includes('[HIGH_ENTROPY_REDACTED]')) {
-      sanitized = sanitized.replace(span.text, '[HIGH_ENTROPY_REDACTED]');
-      redactionCounts['HIGH_ENTROPY_SECRET'] = (redactionCounts['HIGH_ENTROPY_SECRET'] || 0) + 1;
-      tokensMap.push({
-        type: 'HIGH_ENTROPY_SECRET',
-        original: span.text,
-        replacement: '[HIGH_ENTROPY_REDACTED]',
-        confidence: 98.2,
-        risk: 'HIGH'
-      });
-    }
+    if (!sanitized.includes('[HIGH_ENTROPY_REDACTED]') && !sanitized.includes(span.text)) return;
+    sanitized = sanitized.replace(span.text, '[HIGH_ENTROPY_REDACTED]');
+    redactionCounts['HIGH_ENTROPY_SECRET'] = (redactionCounts['HIGH_ENTROPY_SECRET'] || 0) + 1;
+    tokensMap.push({
+      type: 'HIGH_ENTROPY_SECRET',
+      original: span.text,
+      replacement: '[HIGH_ENTROPY_REDACTED]',
+      confidence: 98.2,
+      risk: 'HIGH'
+    });
   });
 
   const diff = process.hrtime(startTime);

@@ -106,6 +106,40 @@
     }
   }
 
+  function calculateEntropy(str) {
+    const len = str.length;
+    if (len === 0) return 0;
+    const freq = {};
+    for (let i = 0; i < len; i++) {
+      const char = str[i];
+      freq[char] = (freq[char] || 0) + 1;
+    }
+    let entropy = 0;
+    for (const char in freq) {
+      const p = freq[char] / len;
+      entropy -= p * Math.log2(p);
+    }
+    return entropy;
+  }
+
+  function detectHighEntropySpans(text) {
+    const spans = [];
+    const tokens = text.match(/\b[a-zA-Z0-9_\-\.]{16,128}\b/g) || [];
+
+    for (const token of tokens) {
+      if (token.startsWith('[') && token.endsWith(']')) continue;
+      const entropy = calculateEntropy(token);
+      if (entropy > 3.7 && /[0-9]/.test(token) && /[a-zA-Z]/.test(token)) {
+        spans.push({
+          text: token,
+          entropy: entropy.toFixed(2),
+          label: 'HIGH_ENTROPY_SECRET'
+        });
+      }
+    }
+    return spans;
+  }
+
   // 22+ High-Sensitivity Local Scanner Rules
   function redactTextLocally(text) {
     let sanitized = text || '';
@@ -116,7 +150,7 @@
       { name: 'PRIVATE_KEY', pattern: /-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----/gi, label: '[RSA_PRIVATE_KEY_REDACTED]', risk: 'CRITICAL' },
       { name: 'DATABASE_URI', pattern: /(?:jdbc:)?(?:postgresql|postgres|mysql|mongodb|mongodb\+srv|redis|oracle|mssql):\/\/[a-zA-Z0-9_]+:[^@\s]+@[a-zA-Z0-9_.-]+:\d+\/[a-zA-Z0-9_.-]+/gi, label: '[DATABASE_URI_REDACTED]', risk: 'CRITICAL' },
       { name: 'AWS_ACCESS_KEY', pattern: /\b(AKIA|ASIA|ABIA|ACCA)[0-9A-Z]{16}\b/g, label: '[AWS_ACCESS_KEY_REDACTED]', risk: 'CRITICAL' },
-      { name: 'AWS_SECRET_KEY', pattern: /(?:aws_secret_access_key|Secret Access Key|SecretKey|aws_secret)\s*[:=]\s*["']?([a-zA-Z0-9\/+]{40})["']?/gi, label: 'aws_secret_access_key: [AWS_SECRET_KEY_REDACTED]', risk: 'CRITICAL' },
+      { name: 'AWS_SECRET_KEY', pattern: /(?:aws_secret_access_key|aws_secret_key|aws_secret|Secret Access Key|AWS Secret Key|AWS Secret)\s*[:=]\s*["']?([a-zA-Z0-9\/+=]{32,64})["']?/gi, label: 'AWS Secret: [AWS_SECRET_KEY_REDACTED]', risk: 'CRITICAL' },
       { name: 'OPENAI_API_KEY', pattern: /\bsk-(?:proj-|admin-)?[a-zA-Z0-9_-]{32,128}\b/g, label: '[OPENAI_API_KEY_REDACTED]', risk: 'CRITICAL' },
       { name: 'ANTHROPIC_API_KEY', pattern: /\bsk-ant-api[0-9a-zA-Z-_]{60,128}\b/g, label: '[ANTHROPIC_API_KEY_REDACTED]', risk: 'CRITICAL' },
       { name: 'GITHUB_TOKEN', pattern: /\b(ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9_]{36,255}\b/g, label: '[GITHUB_TOKEN_REDACTED]', risk: 'CRITICAL' },
@@ -126,7 +160,8 @@
       { name: 'STRIPE_KEY', pattern: /\b(sk|pk|rk)_(test|live)_[0-9a-zA-Z]{24,99}\b/g, label: '[STRIPE_KEY_REDACTED]', risk: 'CRITICAL' },
       { name: 'SENDGRID_API_KEY', pattern: /\bSG\.[a-zA-Z0-9_-]{22}\.[a-zA-Z0-9_-]{43}\b/g, label: '[SENDGRID_KEY_REDACTED]', risk: 'CRITICAL' },
       { name: 'TWILIO_API_KEY', pattern: /\b(AC|SK)[a-f0-9]{32}\b/g, label: '[TWILIO_KEY_REDACTED]', risk: 'CRITICAL' },
-      { name: 'PASSWORD_ASSIGNMENT', pattern: /(?:password|passwd|pass|pwd|api_secret|auth_secret)\s*[:=]\s*["']([^"'\s]{6,64})["']/gi, label: 'password: "[PASSWORD_REDACTED]"', risk: 'CRITICAL' },
+      { name: 'GENERIC_SECRET_KEY', pattern: /(?:api_secret|client_secret|app_secret|secret_key|private_secret|auth_secret|access_secret)\s*[:=]\s*["']?([a-zA-Z0-9\/+_\-=]{16,128})["']?/gi, label: 'Secret: "[SECRET_KEY_REDACTED]"', risk: 'CRITICAL' },
+      { name: 'PASSWORD_ASSIGNMENT', pattern: /(?:password|passwd|pass|pwd)\s*[:=]\s*["']([^"'\s]{6,64})["']/gi, label: 'password: "[PASSWORD_REDACTED]"', risk: 'CRITICAL' },
       { name: 'HINGLISH_SECRET_JARGON', pattern: /(?:chabi|chabhi|khufia_code|gupta_key|chupi_key)\s*[:=]\s*["']?([^"'\s]{6,64})["']?/gi, label: 'chabi: "[HINGLISH_SECRET_REDACTED]"', risk: 'CRITICAL' },
       { name: 'JWT_BEARER', pattern: /Bearer\s+eyJ[a-zA-Z0-9_\-\.=]{20,}/gi, label: 'Bearer [JWT_TOKEN_REDACTED]', risk: 'CRITICAL' },
       { name: 'AADHAAR_CARD', pattern: /\b[2-9]{1}\d{3}\s?\d{4}\s?\d{4}\b/g, label: '[AADHAAR_NUMBER_REDACTED]', risk: 'CRITICAL' },
@@ -145,6 +180,15 @@
         detectedTokens.push({ name: rule.name, label: rule.label, original: match, risk: rule.risk });
         return rule.label;
       });
+    });
+
+    const entropySpans = detectHighEntropySpans(sanitized);
+    entropySpans.forEach((span) => {
+      if (!sanitized.includes('[HIGH_ENTROPY_REDACTED]') && sanitized.includes(span.text)) {
+        sanitized = sanitized.replace(span.text, '[HIGH_ENTROPY_REDACTED]');
+        count++;
+        detectedTokens.push({ name: 'HIGH_ENTROPY_SECRET', label: '[HIGH_ENTROPY_REDACTED]', original: span.text, risk: 'HIGH' });
+      }
     });
 
     return { sanitized, count, detectedTokens };
