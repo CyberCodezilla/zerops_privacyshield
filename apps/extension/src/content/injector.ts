@@ -1,4 +1,4 @@
-// Upgraded PrivacyShield Content Script for ChatGPT & Claude (Bulletproof DOM Interceptor)
+// PrivacyShield Content Script for ChatGPT & Claude (Unbreakable Direct DOM Gatekeeper & Interactive Shield)
 
 interface ExtensionConfig {
   apiUrl: string;
@@ -16,47 +16,25 @@ const DEFAULT_CONFIG: ExtensionConfig = {
   statsRedactedCount: 0
 };
 
-async function getConfig(): Promise<ExtensionConfig> {
-  return new Promise((resolve) => {
-    try {
-      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-        chrome.storage.sync.get(DEFAULT_CONFIG, (items) => {
-          if (!items || typeof items.enabled === 'undefined') {
-            resolve(DEFAULT_CONFIG);
-          } else {
-            resolve({ ...DEFAULT_CONFIG, ...items });
-          }
-        });
-      } else {
-        resolve(DEFAULT_CONFIG);
-      }
-    } catch {
-      resolve(DEFAULT_CONFIG);
-    }
-  });
-}
+let cachedConfig: ExtensionConfig = DEFAULT_CONFIG;
 
-async function updateConfig(newConfig: Partial<ExtensionConfig>): Promise<ExtensionConfig> {
-  const current = await getConfig();
-  const updated = { ...current, ...newConfig };
-  return new Promise((resolve) => {
-    try {
-      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-        chrome.storage.sync.set(updated, () => resolve(updated));
-      } else {
-        resolve(updated);
+function syncConfig() {
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+    chrome.storage.sync.get(DEFAULT_CONFIG, (items) => {
+      if (items && typeof items.enabled !== 'undefined') {
+        cachedConfig = { ...DEFAULT_CONFIG, ...items };
       }
-    } catch {
-      resolve(updated);
-    }
-  });
+    });
+  }
 }
+syncConfig();
 
 async function incrementRedactedStats(count: number): Promise<number> {
-  const config = await getConfig();
-  const newTotal = (config.statsRedactedCount || 0) + count;
-  await updateConfig({ statsRedactedCount: newTotal });
-  return newTotal;
+  cachedConfig.statsRedactedCount = (cachedConfig.statsRedactedCount || 0) + count;
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+    chrome.storage.sync.set(cachedConfig);
+  }
+  return cachedConfig.statsRedactedCount;
 }
 
 function isValidLuhn(cardNumberStr: string): boolean {
@@ -101,7 +79,7 @@ function analyzeSensitiveText(text: string): { sanitized: string; count: number;
     });
   };
 
-  // 1. Secrets & Credentials
+  // 1. Secrets & Credentials (OpenAI sk-proj- / sk-live- / AWS / JWT / DB)
   checkPattern(/\bsk[-_][a-zA-Z0-9_-]{20,}\b/gi, 'SECRET_KEY', 'SECRET_KEY', 'OpenAI Secret API Key detected. Exposing live keys risks quota theft, unauthorized usage, and account compromise.');
   checkPattern(/\bAKIA[0-9A-Z]{16}\b/g, 'AWS_ACCESS_KEY', 'SECRET_KEY', 'AWS IAM Access Key detected. Leaking AWS credentials gives full cloud infrastructure access.');
   checkPattern(/\beyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\b/g, 'JWT_TOKEN', 'JWT_SECRET', 'JSON Web Token (JWT) detected. Exposing session tokens risks identity hijacking.');
@@ -121,6 +99,7 @@ console.log('🛡️ PrivacyShield Active on:', window.location.hostname);
 let badgeElement: HTMLDivElement | null = null;
 let activeModalElement: HTMLDivElement | null = null;
 const sessionTokenMap = new Map<string, string>();
+let isBypassingLock = false;
 
 function injectSecurityBadge() {
   if (document.getElementById('privacyshield-badge')) return;
@@ -159,7 +138,7 @@ function injectSecurityBadge() {
   document.body.appendChild(badgeElement);
 }
 
-// Broadened & Deep Prompt Text Extraction
+// Extract prompt text from all possible elements
 function getPromptRawText(): { text: string; element: HTMLElement | null } {
   const elements = [
     document.querySelector('#prompt-textarea'),
@@ -203,7 +182,7 @@ function replaceProseMirrorContent(el: HTMLElement, sanitizedText: string) {
   document.execCommand('insertText', false, sanitizedText);
 }
 
-// Interactive Warning Modal
+// Show Warning Modal highlighting detected sensitive words with explanation & choices
 function showSecurityWarningModal(
   items: DetectedItem[],
   sanitizedText: string,
@@ -253,7 +232,6 @@ function showSecurityWarningModal(
   activeModalElement.innerHTML = `
     <div style="background: #0f172a; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 16px; width: 100%; max-width: 520px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 30px rgba(239, 68, 68, 0.2); overflow: hidden;">
       
-      <!-- Header -->
       <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(185, 28, 28, 0.1)); padding: 18px 20px; border-bottom: 1px solid rgba(239, 68, 68, 0.2); display: flex; align-items: center; gap: 12px;">
         <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); display: flex; align-items: center; justify-content: center; font-size: 20px;">
           ⚠️
@@ -264,7 +242,6 @@ function showSecurityWarningModal(
         </div>
       </div>
 
-      <!-- Content -->
       <div style="padding: 20px; max-height: 320px; overflow-y: auto;">
         <div style="font-size: 12px; font-weight: 700; color: #fca5a5; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
           Detected Sensitive Entities (${items.length}):
@@ -272,12 +249,11 @@ function showSecurityWarningModal(
         ${itemsHtml}
       </div>
 
-      <!-- Action Footer -->
       <div style="background: #020617; padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: flex-end; gap: 10px;">
         <button id="ps-cancel-btn" style="padding: 9px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: #94a3b8; font-size: 13px; font-weight: 600; cursor: pointer;">
           ❌ Cancel & Edit
         </button>
-        <button id="ps-encrypt-btn" style="padding: 9px 18px; border: none; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);">
+        <button id="ps-encrypt-btn" style="padding: 9px 18px; border-radius: 8px; border: none; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);">
           🔒 Encrypt & Send Safe Prompt
         </button>
       </div>
@@ -297,7 +273,7 @@ function showSecurityWarningModal(
   });
 }
 
-// Show Alert Modal for Image Upload Cancelled
+// Alert Modal for Image Upload Cancelled
 function showImageUploadBlockedModal(fileName: string, reason: string) {
   if (activeModalElement) activeModalElement.remove();
 
@@ -357,10 +333,9 @@ function showImageUploadBlockedModal(fileName: string, reason: string) {
   });
 }
 
-// Intercept submission with fallback raw text detection
-async function interceptSubmission(e: Event) {
-  const config = await getConfig();
-  if (!config.enabled) return;
+// SYNCHRONOUS Submission Gatekeeper Lock (Traps ALL Mouse & Keyboard events on 0ms)
+function handleSynchronousSubmissionGuard(e: Event) {
+  if (isBypassingLock) return;
 
   const { text: rawText, element: inputEl } = getPromptRawText();
   if (!rawText || !rawText.trim()) return;
@@ -368,14 +343,14 @@ async function interceptSubmission(e: Event) {
   const { sanitized, count, items, tokenMap } = analyzeSensitiveText(rawText);
 
   if (count > 0) {
-    console.log('🛡️ [PrivacyShield] Sensitive PII detected in prompt:', items);
-
-    // STOP form submission instantly!
+    // SYNCHRONOUSLY TRAP & CANCEL SUBMISSION IMMEDIATELY!
     e.preventDefault();
     e.stopPropagation();
     if (e.stopImmediatePropagation) e.stopImmediatePropagation();
 
-    // Open Interactive Warning Modal
+    console.log('🛡️ [PrivacyShield GATEKEEPER] Trapped submission attempt containing sensitive data:', items);
+
+    // Show warning modal
     showSecurityWarningModal(items, sanitized, tokenMap, async () => {
       tokenMap.forEach((val, key) => sessionTokenMap.set(key, val));
 
@@ -391,14 +366,18 @@ async function interceptSubmission(e: Event) {
 
       await incrementRedactedStats(count);
 
-      // Trigger send button click
+      // Trigger safe submission now that prompt is encrypted & clean
+      isBypassingLock = true;
       setTimeout(() => {
         const sendBtn = document.querySelector('button[data-testid="send-button"]') as HTMLButtonElement || 
                         document.querySelector('button[aria-label*="Send"]') as HTMLButtonElement ||
                         document.querySelector('button') as HTMLButtonElement;
         if (sendBtn) sendBtn.click();
+        isBypassingLock = false;
       }, 150);
     });
+
+    return false;
   }
 }
 
@@ -422,35 +401,57 @@ function attachImageUploadShield() {
   }, true);
 }
 
+// Attach high-priority capture-phase listeners directly to Send buttons and window
+function attachButtonGatekeeper() {
+  const sendButtons = document.querySelectorAll('button[data-testid="send-button"], button[aria-label*="Send"], button[aria-label*="send"]');
+  sendButtons.forEach((btn) => {
+    if (!btn.getAttribute('data-ps-attached')) {
+      btn.setAttribute('data-ps-attached', 'true');
+      ['mousedown', 'pointerdown', 'touchstart', 'click'].forEach((evtType) => {
+        btn.addEventListener(evtType, handleSynchronousSubmissionGuard, true);
+      });
+    }
+  });
+}
+
 function attachListeners() {
   injectSecurityBadge();
   attachImageUploadShield();
+  attachButtonGatekeeper();
 
-  // Capture phase Enter keydown listener
+  // 1. Capture-phase Enter keydown listener on window
   window.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      interceptSubmission(e);
+      handleSynchronousSubmissionGuard(e);
     }
   }, true);
 
-  // Capture phase Send button click listener
-  window.addEventListener('click', (e: MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (
-      target &&
-      (target.getAttribute('data-testid') === 'send-button' ||
-        target.closest('[data-testid="send-button"]') ||
-        target.getAttribute('aria-label')?.toLowerCase().includes('send') ||
-        target.closest('button[aria-label*="Send"]'))
-    ) {
-      interceptSubmission(e);
-    }
-  }, true);
+  // 2. Capture-phase mousedown / pointerdown / touchstart / click on window
+  ['mousedown', 'pointerdown', 'touchstart', 'click'].forEach((evtType) => {
+    window.addEventListener(evtType, (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.getAttribute('data-testid') === 'send-button' ||
+          target.closest('[data-testid="send-button"]') ||
+          target.getAttribute('aria-label')?.toLowerCase().includes('send') ||
+          target.closest('button[aria-label*="Send"]'))
+      ) {
+        handleSynchronousSubmissionGuard(e);
+      }
+    }, true);
+  });
 
-  // Capture phase Form submit listener
+  // 3. Capture-phase Form submit listener
   window.addEventListener('submit', (e: Event) => {
-    interceptSubmission(e);
+    handleSynchronousSubmissionGuard(e);
   }, true);
+
+  // 4. Continuous DOM observer to attach button gatekeeper dynamically
+  const observer = new MutationObserver(() => {
+    attachButtonGatekeeper();
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
 }
 
 if (document.readyState === 'loading') {
