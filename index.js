@@ -10,10 +10,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // In-memory telemetry & audit ledger
 const metrics = {
-  totalRequests: 4120,
-  totalRedactions: 18940,
-  threatsBlocked: 1480,
-  ocrScansPerformed: 320,
+  totalRequests: 4125,
+  totalRedactions: 18952,
+  threatsBlocked: 1485,
+  ocrScansPerformed: 325,
   startTime: Date.now()
 };
 
@@ -23,6 +23,8 @@ const auditLedger = [
     timestamp: new Date(Date.now() - 35000).toISOString(),
     source: 'EXTENSION (ChatGPT)',
     sourceIp: '192.168.1.105',
+    originalText: 'Database URI: postgresql://admin:P@ssw0rd123@db.internal:5432/production_db\nRSA Key: -----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCA...\n-----END RSA PRIVATE KEY-----',
+    sanitizedText: 'Database URI: [DATABASE_URI_REDACTED]\nRSA Key: [RSA_PRIVATE_KEY_REDACTED]',
     entitiesFound: ['DATABASE_URI', 'PRIVATE_KEY', 'PAN_CARD'],
     language: 'hi',
     riskLevel: 'CRITICAL',
@@ -34,6 +36,8 @@ const auditLedger = [
     timestamp: new Date(Date.now() - 110000).toISOString(),
     source: 'EXTENSION (Claude)',
     sourceIp: '10.0.4.12',
+    originalText: 'AWS Key: AKIAIOSFODNN7EXAMPLE\nGitHub Token: ghp_1234567890abcdefghijklmnopqrstuvwxyz\nAadhaar: 9876 5432 1098',
+    sanitizedText: 'AWS Key: [AWS_ACCESS_KEY_REDACTED]\nGitHub Token: [GITHUB_TOKEN_REDACTED]\nAadhaar: [AADHAAR_NUMBER_REDACTED]',
     entitiesFound: ['AWS_ACCESS_KEY', 'GITHUB_TOKEN', 'AADHAAR_CARD'],
     language: 'mr',
     riskLevel: 'CRITICAL',
@@ -45,21 +49,12 @@ const auditLedger = [
     timestamp: new Date(Date.now() - 280000).toISOString(),
     source: 'EXTENSION (Gemini)',
     sourceIp: '172.16.0.44',
+    originalText: 'Slack Webhook: https://hooks.slack.com/services/T123/B456/7890\nSecret Token: 7a8b9c1d2e3f4a5b6c7d8e9f0',
+    sanitizedText: 'Slack Webhook: [SLACK_WEBHOOK_REDACTED]\nSecret Token: [HIGH_ENTROPY_REDACTED]',
     entitiesFound: ['SLACK_WEBHOOK', 'HIGH_ENTROPY_SECRET'],
     language: 'en',
     riskLevel: 'HIGH',
     riskScore: 89,
-    status: 'SANITY_PASSED'
-  },
-  {
-    id: 'tx_5a230e99-11ba-4112-9901-33128901caee',
-    timestamp: new Date(Date.now() - 420000).toISOString(),
-    source: 'WEB OCR SCANNER',
-    sourceIp: '192.168.1.112',
-    entitiesFound: ['CREDIT_CARD', 'EMAIL', 'SSN'],
-    language: 'en',
-    riskLevel: 'CRITICAL',
-    riskScore: 96,
     status: 'SANITY_PASSED'
   }
 ];
@@ -344,25 +339,31 @@ function sanitizeText(text, options = {}) {
   if (totalRedacted > 0) metrics.threatsBlocked += 1;
 
   const reqSource = options.source || 'WEB API';
+  const txId = 'tx_' + crypto.randomBytes(8).toString('hex');
 
-  if (totalRedacted > 0 || options.forceLog) {
-    const txId = 'tx_' + crypto.randomBytes(8).toString('hex');
-    const maxRisk = tokensMap.some(t => t.risk === 'CRITICAL') ? 'CRITICAL' : (tokensMap.some(t => t.risk === 'HIGH') ? 'HIGH' : 'MEDIUM');
-    auditLedger.unshift({
-      id: txId,
-      timestamp: new Date().toISOString(),
-      source: reqSource,
-      sourceIp: '192.168.1.' + Math.floor(Math.random() * 200 + 10),
-      entitiesFound: Object.keys(redactionCounts).length > 0 ? Object.keys(redactionCounts) : ['CLEAN_SCAN'],
-      language: lang,
-      riskLevel: maxRisk,
-      riskScore: Math.min(100, totalRedacted * 22 + 45),
-      status: 'SANITY_PASSED'
-    });
-    if (auditLedger.length > 30) auditLedger.pop();
-  }
+  const maxRisk = tokensMap.some(t => t.risk === 'CRITICAL') ? 'CRITICAL' : (tokensMap.some(t => t.risk === 'HIGH') ? 'HIGH' : 'MEDIUM');
+
+  const auditEntry = {
+    id: txId,
+    timestamp: new Date().toISOString(),
+    source: reqSource,
+    sourceIp: '192.168.1.' + Math.floor(Math.random() * 200 + 10),
+    originalText: text,
+    sanitizedText: sanitized,
+    entitiesFound: Object.keys(redactionCounts).length > 0 ? Object.keys(redactionCounts) : ['CLEAN_SCAN'],
+    language: lang,
+    riskLevel: maxRisk,
+    riskScore: Math.min(100, totalRedacted * 22 + 45),
+    tokensMap,
+    languageInstruction: langInstruction,
+    status: 'SANITY_PASSED'
+  };
+
+  auditLedger.unshift(auditEntry);
+  if (auditLedger.length > 35) auditLedger.pop();
 
   return {
+    id: txId,
     originalLength: text.length,
     sanitizedText: sanitized,
     detectedLanguage: lang,
@@ -398,6 +399,21 @@ app.post('/api/sanitize', (req, res) => {
   });
 });
 
+// Transaction Lookup by ID for synchronized website inspection
+app.get('/api/transaction/:txId', (req, res) => {
+  const { txId } = req.params;
+  const entry = auditLedger.find(t => t.id === txId);
+
+  if (!entry) {
+    return res.status(404).json({ success: false, error: 'Transaction record not found.' });
+  }
+
+  res.json({
+    success: true,
+    transaction: entry
+  });
+});
+
 // OCR Image Sanitization Endpoint
 app.post('/api/ocr-sanitize', (req, res) => {
   const { imageText, imageName, selectedLanguage, source } = req.body;
@@ -409,8 +425,7 @@ app.post('/api/ocr-sanitize', (req, res) => {
   metrics.ocrScansPerformed += 1;
   const result = sanitizeText(imageText, {
     selectedLanguage,
-    source: source || `EXTENSION OCR (${imageName || 'IMAGE'})`,
-    forceLog: true
+    source: source || `EXTENSION OCR (${imageName || 'IMAGE'})`
   });
 
   res.json({

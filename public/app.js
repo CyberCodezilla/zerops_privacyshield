@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const ledgerTableBody = document.getElementById('ledgerTableBody');
   const btnExportLedger = document.getElementById('btnExportLedger');
 
-  // Multi-Language & High-Sensitivity Presets
+  // Presets
   const PRESETS = {
     support: `SYSTEM AUDIT REPORT\nCustomer incident ticket #84920\nUser: Alice Smith\nEmail: alice.smith@enterprise.org\nDirect Line: +1 (555) 349-8201\nSSN Verification Token: 987-65-4321\nStatus: Request password reset and account verification.`,
     hindi: `SYSTEM LOG (HINDI/HINGLISH INCIDENT):\nDatabase connect karte waqt timeout error aa raha hai.\nCredentials used: postgresql://admin:P@ssw0rd123@db.internal:5432/production_db\nUser email: ramesh.sharma@corp.in\nContact phone: +91 98200 12345\nKrupaya server configurations aur SQL query verify karein.`,
@@ -160,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(redactionPattern, '<mark class="token-highlight emerald">$1</mark>');
   }
 
-  // Core Sanitization Action with Language Routing
+  // Core Sanitization Action
   async function runSanitization() {
     const text = inputText.value;
     if (!text.trim()) {
@@ -237,6 +237,71 @@ document.addEventListener('DOMContentLoaded', () => {
     if (inputText.value.trim()) runSanitization();
   });
 
+  // Synchronized Transaction Inspection from URL Parameter ?txId=...
+  async function checkSynchronizedTransaction() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const txId = urlParams.get('txId');
+
+    if (!txId) {
+      btnPresetSupport.click();
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/transaction/${txId}`);
+      const data = await res.json();
+
+      if (data.success && data.transaction) {
+        const tx = data.transaction;
+        inputText.value = tx.originalText || '';
+        inputCharCount.textContent = `${inputText.value.length} BYTES`;
+
+        outputDisplay.innerHTML = renderHighlightedText(tx.sanitizedText);
+        redactBadge.textContent = `${tx.entitiesFound.length} ENTITIES REDACTED`;
+        timeBadge.textContent = `0.40 MS`;
+
+        const langName = tx.language === 'hi' ? 'HINDI (हिंदी)' : (tx.language === 'mr' ? 'MARATHI (मराठी)' : 'ENGLISH');
+        detectedLangBadge.textContent = `LANG: ${langName}`;
+        telemetryLangBadge.textContent = `EXT TRANSACTION: ${tx.id.slice(0, 14)}...`;
+
+        langInstructionDisplay.textContent = tx.languageInstruction || getSystemLanguageInstruction(tx.language);
+        promptInjectionBadge.textContent = `INSPECTING EXTENSION CERTIFICATE: ${tx.id}`;
+
+        if (tx.tokensMap && tx.tokensMap.length > 0) {
+          tokensMapContainer.innerHTML = tx.tokensMap.map((t) => {
+            const riskClass = t.risk === 'CRITICAL' ? 'badge-crimson' : (t.risk === 'HIGH' ? 'badge-amber' : 'badge-cyan');
+            const fillClass = t.risk === 'CRITICAL' ? 'crimson' : (t.risk === 'HIGH' ? 'cyan' : 'green');
+            return `
+              <div class="token-card">
+                <div class="token-card-header">
+                  <span class="token-type">${t.type}</span>
+                  <span class="badge ${riskClass}">${t.risk}</span>
+                </div>
+                <div class="confidence-bar-wrapper">
+                  <div class="confidence-label-row">
+                    <span>CONFIDENCE SCORE</span>
+                    <span class="text-emerald">${t.confidence || 99.4}%</span>
+                  </div>
+                  <div class="progress-bar-bg">
+                    <div class="progress-bar-fill ${fillClass}" style="width: ${t.confidence || 99}%;"></div>
+                  </div>
+                </div>
+                <div class="token-replaced-box">MASKED TOKEN: ${t.replacement}</div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        // Switch to Playground Tab
+        tabBtns[0].click();
+      } else {
+        btnPresetSupport.click();
+      }
+    } catch (e) {
+      btnPresetSupport.click();
+    }
+  }
+
   // OCR Image Sanitization Action
   btnScanOcr.addEventListener('click', async () => {
     const file = ocrFileInput.files[0];
@@ -248,7 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       btnScanOcr.textContent = 'SCANNING IMAGE VIA OCR...';
 
-      // Standard OCR Simulation text extracted from credential images / screenshots
       const mockExtractedText = `SCANNED CREDENTIAL CARD (OCR OUTPUT):\nCardholder: Rajesh Kumar\nPAN Number: ABCDE9876F\nAadhaar ID: 9876 5432 1098\nEmail: rajesh.k@corp.in\nDatabase Config: postgresql://admin:Pass12345@db.internal:5432/finance_db\nPrivate Key:\n-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA3f2dM1k7...EXAMPLEDUMMYKEYDATA...\n-----END RSA PRIVATE KEY-----`;
 
       const res = await fetch('/api/ocr-sanitize', {
@@ -337,7 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return `
             <tr>
               <td>
-                <span class="tx-id-badge" onclick="navigator.clipboard.writeText('${item.id}'); alert('Copied UUID: ${item.id}');">
+                <span class="tx-id-badge" onclick="window.location.href='/?txId=${item.id}'">
                   <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                   ${item.id.slice(0, 18)}...
                 </span>
@@ -383,6 +447,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Auto-trigger initial preset
-  btnPresetSupport.click();
+  // Check URL Parameter for Synchronized Extension Transaction Inspection
+  checkSynchronizedTransaction();
 });

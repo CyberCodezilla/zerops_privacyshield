@@ -1,6 +1,6 @@
 /**
- * Privacy Shield — Universal AI Privacy Guard Content Script v2.1
- * Features: Interactive Threat Warning Overlay, High-Sensitivity Detection, OCR Image Processing, Direct Dashboard Navigation.
+ * Privacy Shield — Universal AI Privacy Guard Content Script v2.2
+ * Features: Synchronized Transaction Deep-Linking, Interactive Threat Alert Modal, High-Sensitivity Detection, OCR Image Scanner.
  */
 
 (function () {
@@ -11,8 +11,7 @@
     apiUrl: 'https://app-2c3d-3000.prg1.zerops.app',
     selectedLanguage: 'auto',
     autoRedactOnPaste: true,
-    autoRedactOnSubmit: true,
-    requireConfirmation: true
+    autoRedactOnSubmit: true
   };
 
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
@@ -42,6 +41,7 @@
   let shieldBadge = null;
   let redactionCount = 0;
   let activeModal = null;
+  let latestTxId = null;
 
   function initShield() {
     createFloatingBadge();
@@ -65,15 +65,20 @@
       </div>
     `;
 
+    // Click handler to open deployed website synchronized with exact transaction ID
     shieldBadge.addEventListener('click', () => {
-      window.open(config.apiUrl, '_blank');
+      const targetUrl = latestTxId 
+        ? `${config.apiUrl}/?txId=${latestTxId}`
+        : config.apiUrl;
+      window.open(targetUrl, '_blank');
     });
 
     document.body.appendChild(shieldBadge);
   }
 
-  function updateBadgeCount(count) {
+  function updateBadgeCount(count, txId) {
     redactionCount += count;
+    if (txId) latestTxId = txId;
     const countEl = document.getElementById('ps-redact-count');
     if (countEl) {
       countEl.textContent = `${redactionCount} REDACTED`;
@@ -225,8 +230,7 @@
               // Action 1: Confirm Redact
               () => {
                 setElementText(el, currentText + sanitized);
-                updateBadgeCount(count);
-                logTransactionToBackend(pastedText);
+                logTransactionToBackend(pastedText, count);
               },
               // Action 2: Bypass
               () => {
@@ -249,12 +253,10 @@
                 // Action 1: Confirm Redact
                 () => {
                   setElementText(el, sanitized);
-                  updateBadgeCount(count);
-                  logTransactionToBackend(text);
+                  logTransactionToBackend(text, count);
                 },
                 // Action 2: Bypass
                 () => {
-                  // Re-trigger enter event cleanly
                   setElementText(el, text);
                 }
               );
@@ -265,7 +267,7 @@
     });
   }
 
-  function logTransactionToBackend(text) {
+  function logTransactionToBackend(text, count) {
     fetch(`${config.apiUrl}/api/sanitize`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -274,7 +276,18 @@
         selectedLanguage: config.selectedLanguage,
         source: `EXTENSION (${getPlatformName()})`
       })
-    }).catch(() => {});
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success && data.result) {
+        updateBadgeCount(count, data.result.id);
+      } else {
+        updateBadgeCount(count, null);
+      }
+    })
+    .catch(() => {
+      updateBadgeCount(count, null);
+    });
   }
 
   function attachImageOCRListeners() {
@@ -307,7 +320,7 @@
       .then(res => res.json())
       .then(data => {
         if (data.success && data.result.totalRedacted > 0) {
-          updateBadgeCount(data.result.totalRedacted);
+          updateBadgeCount(data.result.totalRedacted, data.result.id);
           alert(`[PRIVACY SHIELD OCR ALERT]: Redacted ${data.result.totalRedacted} sensitive item(s) inside uploaded image "${file.name}". View full audit trace on Zerops dashboard.`);
         }
       })
