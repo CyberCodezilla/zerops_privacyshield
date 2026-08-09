@@ -149,6 +149,10 @@
         </div>
         <div class="metric-value text-emerald">100.0% REJECTION</div>
         <div class="metric-sub">Zero-Data Retention Policy Active</div>
+        <div class="info-tooltip-box">
+          <div class="tooltip-title">[SECURITY SHIELD STATUS]</div>
+          <p class="tooltip-text">100% of prompts containing raw API keys, passwords, database URIs, or personal IDs are intercepted and sanitized before leaving your browser.</p>
+        </div>
       </div>
 
       <div class="metric-card">
@@ -158,6 +162,10 @@
         </div>
         <div class="metric-value text-cyan" id="statRequests">4,380</div>
         <div class="metric-sub">Processed through Inbound Proxy</div>
+        <div class="info-tooltip-box">
+          <div class="tooltip-title">[TOTAL PROMPTS SANITIZED]</div>
+          <p class="tooltip-text">The total number of prompts scanned and cleaned across the Chrome Extension, Web Playground, OCR Scanner, and API Proxy Gateway.</p>
+        </div>
       </div>
 
       <div class="metric-card">
@@ -167,6 +175,10 @@
         </div>
         <div class="metric-value text-purple" id="statRedactions">19,820</div>
         <div class="metric-sub">Across 22 High-Sensitivity Patterns</div>
+        <div class="info-tooltip-box">
+          <div class="tooltip-title">[SENSITIVE ITEMS MASKED]</div>
+          <p class="tooltip-text">Total count of secret items (passwords, database URLs, API tokens, Aadhaar IDs, emails, phone numbers) masked across 22 pattern matchers.</p>
+        </div>
       </div>
 
       <div class="metric-card">
@@ -176,6 +188,10 @@
         </div>
         <div class="metric-value text-amber">HINGLISH / MINGLISH</div>
         <div class="metric-sub">Non-Distorted Jargon Preservation</div>
+        <div class="info-tooltip-box">
+          <div class="tooltip-title">[JARGON IMMUNITY ENGINE]</div>
+          <p class="tooltip-text">Appends native system instructions to ensure Hindi and Marathi developer jargon (like 'connect karte waqt', 'chabi') is preserved without robotic translation.</p>
+        </div>
       </div>
     </section>
 
@@ -512,6 +528,10 @@
             <div class="progress-bar-bg">
               <div class="progress-bar-fill green" id="analyticsAvgReductionFill" style="width: 99.1%;"></div>
             </div>
+            <div class="info-tooltip-box">
+              <div class="tooltip-title">[EXPOSURE RISK REDUCTION]</div>
+              <p class="tooltip-text">Average percentage by which PrivacyShield reduces security risk exposure before forwarding prompts to external AI models.</p>
+            </div>
           </div>
 
           <div class="analytics-card">
@@ -522,6 +542,10 @@
             <div class="progress-bar-bg">
               <div class="progress-bar-fill cyan" id="analyticsHighConfidenceFill" style="width: 99.6%;"></div>
             </div>
+            <div class="info-tooltip-box">
+              <div class="tooltip-title">[SCANNER ACCURACY RATE]</div>
+              <p class="tooltip-text">Percentage of sensitive items detected with 98%+ pattern confidence accuracy by regex entropy scanners.</p>
+            </div>
           </div>
 
           <div class="analytics-card">
@@ -531,6 +555,10 @@
             </div>
             <div class="progress-bar-bg">
               <div class="progress-bar-fill indigo" id="analyticsThroughputFill" style="width: 85%;"></div>
+            </div>
+            <div class="info-tooltip-box">
+              <div class="tooltip-title">[GATEWAY PERFORMANCE]</div>
+              <p class="tooltip-text">Maximum real-time request processing capacity of the Node.js zero-trust gateway microservice.</p>
             </div>
           </div>
         </div>

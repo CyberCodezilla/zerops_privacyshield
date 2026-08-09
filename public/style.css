@@ -1250,3 +1250,61 @@ mark.token-highlight {
   gap: 12px;
   background: rgba(0, 0, 0, 0.2);
 }
+
+/* Card Info Hover Tooltip Cards */
+.metric-card, .analytics-card {
+  position: relative;
+  overflow: visible !important;
+}
+
+.info-tooltip-box {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  width: 260px;
+  background: #090e17;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(16, 185, 129, 0.2);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.metric-card:hover .info-tooltip-box,
+.analytics-card:hover .info-tooltip-box {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.info-tooltip-box::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.18) transparent transparent transparent;
+}
+
+.tooltip-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--emerald);
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.tooltip-text {
+  font-size: 11px;
+  color: #cbd5e1;
+  line-height: 1.4;
+  margin: 0;
+}
