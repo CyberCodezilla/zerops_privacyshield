@@ -1,18 +1,22 @@
-# 🛡️ PrivacyShield — Zero-Trust Real-Time PII & Secret Redaction Gateway
+<p align="center">
+  <img src="https://img.shields.io/badge/%E2%96%B2_PRIVACY_SHIELD-Zero--Trust_Real--Time_PII_%26_Secret_Redaction_Gateway-0d1117?style=for-the-badge&labelColor=0d1117&color=10b981" alt="PrivacyShield" />
+</p>
 
-> **Empowering Enterprise AI Adoption with Zero Data Leakage.**  
+<p align="center">
+  <a href="https://zerops.io"><img src="https://img.shields.io/badge/Zerops-Deploy_Ready-6366f1?style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+PHBhdGggZD0iTTEyIDJMMiA3djEwbDEwIDUgMTAtNVY3TDEyIDJ6Ii8+PC9zdmc+" alt="Zerops" /></a>
+  <img src="https://img.shields.io/badge/License-MIT-10b981?style=flat-square" alt="MIT License" />
+  <img src="https://img.shields.io/badge/Compliance-GDPR_%7C_HIPAA_%7C_PCI--DSS-06b6d4?style=flat-square" alt="Compliance" />
+  <img src="https://img.shields.io/badge/Node.js-v22-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js" />
+  <img src="https://img.shields.io/badge/Python-v3.11-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/Chrome-Manifest_V3-4285F4?style=flat-square&logo=googlechrome&logoColor=white" alt="Chrome Extension" />
+</p>
+
+> **Empowering Enterprise AI Adoption with Zero Data Leakage.**
 > PrivacyShield is a high-performance, multi-service privacy proxy middleware and compliance dashboard deployed on **Zerops** that automatically detects, sanitizes, and redacts sensitive data (PII, PHI, credentials, high-entropy secrets, and government IDs) before it leaves the client browser or API layer.
-
-[![Zerops Approved](https://img.shields.io/badge/Zerops-Deploy_Ready-6366f1)](https://zerops.io)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Compliance](https://img.shields.io/badge/Compliance-GDPR_|_HIPAA_|_PCI--DSS-10b981)](#compliance)
-[![Node.js](https://img.shields.io/badge/Node.js-v22-339933?style=for-the-badge&logo=nodedotjs)](https://nodejs.org)
-[![Python](https://img.shields.io/badge/Python-v3.11-3776AB?style=for-the-badge&logo=python)](https://python.org)
-[![Manifest V3](https://img.shields.io/badge/Chrome_Extension-Manifest_V3-4285F4?style=for-the-badge&logo=googlechrome)](https://developer.chrome.com/docs/extensions)
 
 ---
 
-## ⚡ Feature Glimpse (Real-Time Redaction in Action)
+## <img src="https://img.shields.io/badge/_%E2%96%B8-Feature_Glimpse-10b981?style=flat-square&labelColor=0d1117" /> Real-Time Redaction in Action
 
 | Inbound Prompt (ChatGPT / Claude / Gemini) | PrivacyShield Intercept & Redaction |
 | :--- | :--- |
@@ -24,7 +28,7 @@
 | `SSN: 000-12-3456` | `SSN: [SSN_REDACTED]` |
 | `Patient Jane Doe (MRN: 987654)` | `Patient [PHI_NAME_REDACTED_1] (MRN: [PHI_NAME_REDACTED_2])` |
 
-### 🔐 Sanitizer Playground — Live Redaction Demo
+### Sanitizer Playground — Live Redaction Demo
 
 > The 3-panel playground lets you paste raw sensitive data on the left and instantly see the sanitized & token-mapped output on the right — with language detection, entity count, and sub-millisecond processing time.
 
@@ -32,46 +36,88 @@
 
 ---
 
-## 🚀 Key Features & Architectural Highlights
+## <img src="https://img.shields.io/badge/_%E2%96%B8-Key_Features-06b6d4?style=flat-square&labelColor=0d1117" /> Architectural Highlights
 
-- **Drop-In OpenAI Proxy Compatibility**: Intercepts `POST /v1/chat/completions` with full streaming (SSE) and non-streaming support.
-- ⚡ **Tier 1 High-Speed Engine (Sub-1ms):** Fastify Node.js service executing 22+ priority regex matchers, in-memory Bloom filter lookups, and Shannon Entropy analysis ($H(X) > 3.8$) to catch raw keys, DB URIs, JWTs, and code-block hashes under 1 millisecond.
-- 🧠 **Tier 2 GLiNER Zero-Shot ML Engine:** Dedicated Python 3.11 FastAPI microservice using GLiNER models (tuned at `0.22` threshold) for contextual PII (`DOCTOR_NAME`, `MEDICAL_FACILITY`, `STREET_ADDRESS`, `MEDICAL_RECORD_NUMBER`).
-- 🌐 **Native Multilingual Reasoning Engine:** Injector system that preserves Hinglish/Minglish technical terms (`Database`, `Timeout`, `Server`) in Hindi/Marathi without translating redaction tokens or distorting logic.
-- 🖼️ **OCR Image Scanner:** In-browser and web interface document engine extracting and sanitizing text from uploaded screenshots containing credentials or government IDs.
-- 🧩 **Universal Chrome Extension (Manifest V3):** Injectable content scripts matching universal DOM selectors across ChatGPT, Claude, Gemini, Perplexity, DeepSeek, and custom chat interfaces. Includes an **Interactive Threat Alert Overlay Modal**.
-- 📊 **Audit Ledger & Threat Analytics:** Compliance dashboard with risk severity scoring (0–100), origin tracking, downloadable JSON transaction certificates, and `?txId=` deep-linked synchronization.
-- **Session State & Response Rehydration**: Isolated per-request token dictionary (`[TOKEN] -> OriginalValue`) restores sensitive data in completions while enforcing a strict **Zero-Persistence Policy** (RAM only).
-
----
-
-## 📐 System Architecture & Zerops Topology
-
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        CLIENT / EXTENSION LAYER                        │
-│   (Chrome Extension / React SPA Dashboard / OpenAI SDK Client)         │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │ HTTP / SSE / WebSocket Intercept
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                    ZEROPS API PROXY SERVICE (api)                      │
-│   - Runtime: Node.js 22 (Fastify Monorepo Service)                     │
-│   - Task: Tier-1 Regex + Shannon Entropy + Bloom Filter + Audit Log    │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │ Fallback for Complex Contextual PII
-                                    │ Container DNS: http://nerengine:8000
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                  ZEROPS NER ML MICROSERVICE (nerengine)                │
-│   - Runtime: Python 3.11 (FastAPI + PyTorch)                           │
-│   - Task: Tier-2 GLiNER Entity Extraction                              │
-└────────────────────────────────────────────────────────────────────────┘
-```
+- **`[PROXY]` Drop-In OpenAI Proxy Compatibility** — Intercepts `POST /v1/chat/completions` with full streaming (SSE) and non-streaming support.
+- **`[T1]` Tier 1 High-Speed Engine (Sub-1ms)** — Fastify Node.js service executing 22+ priority regex matchers, in-memory Bloom filter lookups, and Shannon Entropy analysis (H(X) > 3.8) to catch raw keys, DB URIs, JWTs, and code-block hashes under 1 millisecond.
+- **`[T2]` Tier 2 GLiNER Zero-Shot ML Engine** — Dedicated Python 3.11 FastAPI microservice using GLiNER models (tuned at `0.22` threshold) for contextual PII (`DOCTOR_NAME`, `MEDICAL_FACILITY`, `STREET_ADDRESS`, `MEDICAL_RECORD_NUMBER`).
+- **`[LANG]` Native Multilingual Reasoning Engine** — Injector system that preserves Hinglish/Minglish technical terms (`Database`, `Timeout`, `Server`) in Hindi/Marathi without translating redaction tokens or distorting logic.
+- **`[OCR]` OCR Image Scanner** — In-browser and web interface document engine extracting and sanitizing text from uploaded screenshots containing credentials or government IDs.
+- **`[EXT]` Universal Chrome Extension (Manifest V3)** — Injectable content scripts matching universal DOM selectors across ChatGPT, Claude, Gemini, Perplexity, DeepSeek, and custom chat interfaces. Includes an **Interactive Threat Alert Overlay Modal**.
+- **`[AUDIT]` Audit Ledger & Threat Analytics** — Compliance dashboard with risk severity scoring (0–100), origin tracking, downloadable JSON transaction certificates, and `?txId=` deep-linked synchronization.
+- **`[REHY]` Session State & Response Rehydration** — Isolated per-request token dictionary (`[TOKEN] -> OriginalValue`) restores sensitive data in completions while enforcing a strict **Zero-Persistence Policy** (RAM only).
 
 ---
 
-## 🔌 Chrome Extension Installation & Setup
+## <img src="https://img.shields.io/badge/_%E2%96%B8-System_Architecture-6366f1?style=flat-square&labelColor=0d1117" /> Zerops Topology
+
+```mermaid
+flowchart TD
+    subgraph CLIENT["CLIENT / EXTENSION LAYER"]
+        EXT["Chrome Extension\n(Manifest V3)"]
+        SPA["React SPA Dashboard\n(Vite)"]
+        SDK["OpenAI SDK Client\n(Python / Node.js)"]
+    end
+
+    subgraph ZEROPS["ZEROPS CLOUD — EU CENTRAL (PRG1)"]
+        subgraph API["API PROXY SERVICE — api:3000"]
+            direction TB
+            T1A["Bloom Filter\n< 0.1ms lookups"]
+            T1B["22+ Regex Scanners\nAWS · GitHub · Stripe · Slack · RSA · IBAN · Aadhaar · PAN"]
+            T1C["Shannon Entropy\nH(X) > 3.8 flagging"]
+            AUDIT_LOG["Audit Ledger\nRisk Scoring 0–100"]
+            REHYDRATOR["Token Rehydrator\nRAM-only · Zero Persistence"]
+        end
+
+        subgraph NER["NER ML MICROSERVICE — nerengine:8000"]
+            GLINER["GLiNER Zero-Shot NER\nThreshold 0.22"]
+            ENTITIES["Entity Extraction\nDOCTOR · FACILITY · ADDRESS · MRN"]
+        end
+    end
+
+    subgraph UPSTREAM["UPSTREAM AI PROVIDERS"]
+        GPT["ChatGPT API"]
+        CLAUDE["Claude API"]
+        GEMINI["Gemini API"]
+        DEEP["DeepSeek API"]
+    end
+
+    EXT -- "HTTP / SSE Intercept" --> API
+    SPA -- "REST API" --> API
+    SDK -- "POST /v1/chat/completions" --> API
+
+    T1A --> T1B --> T1C --> AUDIT_LOG
+    API -- "Container DNS\nhttp://nerengine:8000" --> NER
+    GLINER --> ENTITIES
+
+    API -- "Sanitized Payload\n[REDACTED] tokens" --> UPSTREAM
+    UPSTREAM -- "AI Response" --> REHYDRATOR
+    REHYDRATOR -- "Rehydrated Response\nOriginal values restored" --> CLIENT
+
+    style CLIENT fill:#0d1117,stroke:#10b981,stroke-width:2px,color:#e2e8f0
+    style ZEROPS fill:#0d1117,stroke:#06b6d4,stroke-width:2px,color:#e2e8f0
+    style API fill:#111827,stroke:#10b981,stroke-width:1px,color:#e2e8f0
+    style NER fill:#111827,stroke:#6366f1,stroke-width:1px,color:#e2e8f0
+    style UPSTREAM fill:#0d1117,stroke:#f59e0b,stroke-width:2px,color:#e2e8f0
+    style EXT fill:#1e293b,stroke:#10b981,color:#e2e8f0
+    style SPA fill:#1e293b,stroke:#10b981,color:#e2e8f0
+    style SDK fill:#1e293b,stroke:#10b981,color:#e2e8f0
+    style T1A fill:#064e3b,stroke:#10b981,color:#e2e8f0
+    style T1B fill:#064e3b,stroke:#10b981,color:#e2e8f0
+    style T1C fill:#064e3b,stroke:#10b981,color:#e2e8f0
+    style AUDIT_LOG fill:#1e1b4b,stroke:#6366f1,color:#e2e8f0
+    style REHYDRATOR fill:#1e1b4b,stroke:#06b6d4,color:#e2e8f0
+    style GLINER fill:#312e81,stroke:#6366f1,color:#e2e8f0
+    style ENTITIES fill:#312e81,stroke:#6366f1,color:#e2e8f0
+    style GPT fill:#1a1a2e,stroke:#f59e0b,color:#e2e8f0
+    style CLAUDE fill:#1a1a2e,stroke:#f59e0b,color:#e2e8f0
+    style GEMINI fill:#1a1a2e,stroke:#f59e0b,color:#e2e8f0
+    style DEEP fill:#1a1a2e,stroke:#f59e0b,color:#e2e8f0
+```
+
+---
+
+## <img src="https://img.shields.io/badge/_%E2%96%B8-Chrome_Extension-4285F4?style=flat-square&labelColor=0d1117" /> Installation & Setup
 
 > The PrivacyShield Chrome Extension provides real-time AI protection across ChatGPT, Claude, Gemini, Perplexity, and DeepSeek. Follow the visual guide below to get started in under 2 minutes.
 
@@ -80,20 +126,20 @@
 ### Quick Steps:
 
 1. **Download** — Click the "Download .zip" button on the PrivacyShield dashboard.
-2. **Extract** — Right-click the `.zip` file → "Extract All" to a local folder.
+2. **Extract** — Right-click the `.zip` file, select "Extract All" to a local folder.
 3. **Open Extensions** — Navigate to `chrome://extensions/` in Chrome.
 4. **Developer Mode** — Toggle ON the Developer Mode switch (top-right corner).
 5. **Load Unpacked** — Click "Load unpacked" and select the extracted folder containing `manifest.json`.
-6. **Launch & Protect** — The shield icon appears in your toolbar. Click it to activate real-time AI protection!
+6. **Launch & Protect** — The shield icon appears in your toolbar. Click it to activate real-time AI protection.
 
 ### Connect to Production Gateway
 - Click the **PrivacyShield** icon in your Chrome toolbar.
 - Verify the **API Base URL** points to your local or Zerops gateway (`http://localhost:3000`).
-- Open ChatGPT, Claude, Gemini, or DeepSeek and experience real-time redaction!
+- Open ChatGPT, Claude, Gemini, or DeepSeek and experience real-time redaction.
 
 ---
 
-## 🛠️ Zerops Deployment Guide (Infrastructure-as-Code)
+## <img src="https://img.shields.io/badge/_%E2%96%B8-Zerops_Deployment-6366f1?style=flat-square&labelColor=0d1117" /> Infrastructure-as-Code
 
 > PrivacyShield deploys as a multi-service stack on Zerops with a single `zerops.yaml` manifest. The screenshot below shows both the Node.js API gateway (`api:3000`) and the Python GLiNER ML microservice (`nerengine`) running in the EU Central (PRG1) region.
 
@@ -157,7 +203,7 @@ zerops:
 
 ---
 
-## 🛠️ Local Development & Quickstart
+## <img src="https://img.shields.io/badge/_%E2%96%B8-Local_Development-10b981?style=flat-square&labelColor=0d1117" /> Quickstart
 
 ```bash
 # Install dependencies across all monorepo workspaces
@@ -177,7 +223,7 @@ Open `http://localhost:5173` in your browser to access the 3-Panel Interactive P
 
 ---
 
-## 💻 1-Line Developer SDK Integration
+## <img src="https://img.shields.io/badge/_%E2%96%B8-Developer_SDK-06b6d4?style=flat-square&labelColor=0d1117" /> 1-Line Integration
 
 ### Python
 ```python
@@ -208,7 +254,7 @@ const openai = new OpenAI({
 
 ---
 
-## 🧪 Testing the API Gateway
+## <img src="https://img.shields.io/badge/_%E2%96%B8-Testing-f59e0b?style=flat-square&labelColor=0d1117" /> API Gateway Verification
 
 You can test redaction directly against the gateway using `curl`:
 
@@ -224,8 +270,8 @@ curl -X POST http://localhost:3000/api/sanitize \
 
 ---
 
-## 📄 License & Contact
+## <img src="https://img.shields.io/badge/_%E2%96%B8-License_%26_Contact-e2e8f0?style=flat-square&labelColor=0d1117" />
 
 Distributed under the **MIT License**. Developed for technical evaluation by **CyberCodezilla** (`sahil.s.rane13012007@gmail.com`).
 
-*Deployed with ❤️ on [Zerops Cloud Platform](https://zerops.io)*
+*Deployed on [Zerops Cloud Platform](https://zerops.io)*
