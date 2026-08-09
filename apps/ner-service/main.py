@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from gliner import GLiNER
 from typing import List, Optional
@@ -21,42 +21,50 @@ async def lifespan(app: FastAPI):
     model = None
 
 # Initialize FastAPI app with lifespan parameter
-app = FastAPI(title="PrivacyShield Nemotron-PII Engine", lifespan=lifespan)
+app = FastAPI(title="PrivacyShield Dynamic Schema GLiNER Engine", lifespan=lifespan)
 
 # Target entity categories defined in Nemotron-PII
 DEFAULT_TARGET_LABELS = [
     "person_name", "email", "phone_number", 
     "social_security_number", "credit_card_number", 
-    "medical_record_number", "address", "passport_number"
+    "medical_record_number", "address", "passport_number",
+    "organization", "api_key", "secret_token", "database_credential"
 ]
 
 class TextRequest(BaseModel):
     text: str
-    labels: List[str] = DEFAULT_TARGET_LABELS
-    threshold: float = 0.4
+    labels: Optional[List[str]] = None
+    threshold: float = 0.35
 
 @app.post("/predict")
-def predict_entities(req: TextRequest):
+async def predict_entities(req: TextRequest):
     if model is None:
-        return {"success": False, "error": "Model not loaded yet."}
+        raise HTTPException(status_code=503, detail="Model not loaded yet.")
 
-    entities = model.predict_entities(
-        req.text, 
-        req.labels, 
-        threshold=req.threshold
-    )
-    
-    formatted_spans = []
-    for ent in entities:
-        formatted_spans.append({
-            "text": ent["text"],
-            "label": ent["label"].upper(),
-            "start": ent["start"],
-            "end": ent["end"],
-            "score": round(float(ent["score"]), 3)
-        })
+    try:
+        # Use dynamic labels from Gateway request if provided, else default schema
+        target_labels = req.labels if req.labels and len(req.labels) > 0 else DEFAULT_TARGET_LABELS
+        threshold = req.threshold if req.threshold is not None else 0.35
+
+        entities = model.predict_entities(
+            req.text, 
+            target_labels, 
+            threshold=threshold
+        )
         
-    return {"success": True, "entities": formatted_spans}
+        formatted_spans = []
+        for ent in entities:
+            formatted_spans.append({
+                "text": ent["text"],
+                "label": ent["label"].upper(),
+                "start": ent["start"],
+                "end": ent["end"],
+                "score": round(float(ent["score"]), 3)
+            })
+            
+        return {"success": True, "entities": formatted_spans}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

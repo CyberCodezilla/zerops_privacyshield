@@ -14,8 +14,7 @@ export interface NemotronEntitySpan {
 
 export interface NemotronPredictResponse {
   entities: NemotronEntitySpan[];
-  text: string;
-  entity_count: number;
+  success?: boolean;
 }
 
 const NER_SERVICE_URL = process.env.NER_SERVICE_URL || 'http://127.0.0.1:8000/predict';
@@ -23,7 +22,8 @@ const DEFAULT_TIMEOUT_MS = 3000;
 
 export async function detectEntitiesWithNemotron(
   text: string,
-  threshold: number = 0.3
+  threshold: number = 0.35,
+  customLabels?: string[]
 ): Promise<NemotronEntitySpan[]> {
   if (!text || !text.trim()) {
     return [];
@@ -33,15 +33,20 @@ export async function detectEntitiesWithNemotron(
   const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
 
   try {
+    const payload: Record<string, any> = {
+      text,
+      threshold
+    };
+    if (customLabels && customLabels.length > 0) {
+      payload.labels = customLabels;
+    }
+
     const response = await fetch(NER_SERVICE_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        text,
-        threshold
-      }),
+      body: JSON.stringify(payload),
       signal: controller.signal
     });
 
