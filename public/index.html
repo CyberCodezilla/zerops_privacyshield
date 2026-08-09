@@ -87,7 +87,7 @@
           <span class="metric-title">SANITIZED REQUESTS</span>
           <svg class="metric-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
         </div>
-        <div class="metric-value text-cyan" id="statRequests">4,120</div>
+        <div class="metric-value text-cyan" id="statRequests">4,380</div>
         <div class="metric-sub">Processed through Inbound Proxy</div>
       </div>
 
@@ -96,8 +96,8 @@
           <span class="metric-title">PII TOKENS REDACTED</span>
           <svg class="metric-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
         </div>
-        <div class="metric-value text-purple" id="statRedactions">18,940</div>
-        <div class="metric-sub">Across 16 High-Sensitivity Patterns</div>
+        <div class="metric-value text-purple" id="statRedactions">19,820</div>
+        <div class="metric-sub">Across 22 High-Sensitivity Patterns</div>
       </div>
 
       <div class="metric-card">
@@ -441,13 +441,13 @@
             <h3>ACTIVE ENTERPRISE THREAT & PII PATTERN RULES</h3>
             <p>In-memory high-sensitivity pattern recognition rules running on Node.js microservices.</p>
           </div>
-          <span class="badge badge-emerald">16 ACTIVE PATTERNS</span>
+          <span class="badge badge-emerald">22 ACTIVE PATTERNS</span>
         </div>
 
         <div class="rules-grid">
           <div class="rule-card">
             <div class="rule-header">
-              <span class="rule-title">RSA / OpenSSH Private Keys</span>
+              <span class="rule-title">RSA / OpenSSH / EC Private Keys</span>
               <span class="badge badge-crimson">CRITICAL PRIORITY</span>
             </div>
             <p>Full RSA, EC, OpenSSH, and PGP private key headers and body blocks.</p>
@@ -456,11 +456,29 @@
 
           <div class="rule-card">
             <div class="rule-header">
-              <span class="rule-title">Database URIs (JDBC/Postgres)</span>
+              <span class="rule-title">Database URIs (JDBC/Postgres/MySQL)</span>
               <span class="badge badge-crimson">CRITICAL PRIORITY</span>
             </div>
             <p>Runs before loose Email to prevent password @ symbol corruption.</p>
             <code>(?:jdbc:)?(?:postgresql|postgres|mysql|mongodb|redis|oracle):\/\/[a-zA-Z0-9_]+:[^@\s]+@[a-zA-Z0-9_.-]+:\d+\/[a-zA-Z0-9_.-]+</code>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-title">OpenAI & Anthropic API Keys</span>
+              <span class="badge badge-crimson">CRITICAL RISK</span>
+            </div>
+            <p>OpenAI sk-proj- and Anthropic Claude sk-ant-api secret tokens.</p>
+            <code>\bsk-(?:proj-|ant-api)[a-zA-Z0-9_-]+\b</code>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-title">Hinglish / Minglish Secret Jargon</span>
+              <span class="badge badge-crimson">CRITICAL RISK</span>
+            </div>
+            <p>Non-English secret assignments (chabi, chabhi, khufia_code, gupta_key).</p>
+            <code>(?:chabi|chabhi|khufia_code|gupta_key)\s*[:=]\s*["']?([^"'\s]{6,64})["']?</code>
           </div>
 
           <div class="rule-card">
@@ -497,24 +515,6 @@
             </div>
             <p>GitHub Personal Access Tokens (ghp_, gho_, ghs_, github_pat_).</p>
             <code>\b(ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9_]{36,255}\b</code>
-          </div>
-
-          <div class="rule-card">
-            <div class="rule-header">
-              <span class="rule-title">JWT & Bearer Tokens</span>
-              <span class="badge badge-crimson">CRITICAL RISK</span>
-            </div>
-            <p>JSON Web Tokens (JWT) and HTTP Authorization Bearer headers.</p>
-            <code>Bearer\s+eyJ[a-zA-Z0-9_\-\.=]{20,}</code>
-          </div>
-
-          <div class="rule-card">
-            <div class="rule-header">
-              <span class="rule-title">Social Security Numbers (SSN)</span>
-              <span class="badge badge-crimson">CRITICAL RISK</span>
-            </div>
-            <p>9-digit US Social Security Numbers formatted as XXX-XX-XXXX.</p>
-            <code>\b\d{3}-\d{2}-\d{4}\b</code>
           </div>
         </div>
       </div>

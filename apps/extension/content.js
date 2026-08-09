@@ -1,6 +1,6 @@
 /**
- * Privacy Shield — Universal AI Privacy Guard Content Script v2.2
- * Features: Synchronized Transaction Deep-Linking, Interactive Threat Alert Modal, High-Sensitivity Detection, OCR Image Scanner.
+ * Privacy Shield — Universal AI Privacy Guard Content Script v2.3
+ * 22+ Expanded Enterprise Detection Patterns, Hinglish/Minglish Jargon Scanners, Synchronized Deep-Linking & Threat Warning Overlay.
  */
 
 (function () {
@@ -65,7 +65,6 @@
       </div>
     `;
 
-    // Click handler to open deployed website synchronized with exact transaction ID
     shieldBadge.addEventListener('click', () => {
       const targetUrl = latestTxId 
         ? `${config.apiUrl}/?txId=${latestTxId}`
@@ -87,24 +86,33 @@
     }
   }
 
-  // High-Sensitivity Local Scanner
+  // 22+ High-Sensitivity Local Scanner Rules
   function redactTextLocally(text) {
     let sanitized = text || '';
     let count = 0;
     const detectedTokens = [];
 
     const rules = [
-      { name: 'PRIVATE_KEY', pattern: /-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----/gi, label: '[RSA_PRIVATE_KEY_REDACTED]', risk: 'CRITICAL' },
-      { name: 'DATABASE_URI', pattern: /(?:jdbc:)?(?:postgresql|postgres|mysql|mongodb|redis|oracle):\/\/[a-zA-Z0-9_]+:[^@\s]+@[a-zA-Z0-9_.-]+:\d+\/[a-zA-Z0-9_.-]+/gi, label: '[DATABASE_URI_REDACTED]', risk: 'CRITICAL' },
-      { name: 'AWS_ACCESS_KEY', pattern: /\b(AKIA|ASIA)[0-9A-Z]{16}\b/g, label: '[AWS_ACCESS_KEY_REDACTED]', risk: 'CRITICAL' },
-      { name: 'AWS_SECRET_KEY', pattern: /(?:aws_secret_access_key|Secret Access Key|SecretKey)\s*[:=]\s*["']?([a-zA-Z0-9\/+]{40})["']?/gi, label: 'aws_secret_access_key: [AWS_SECRET_KEY_REDACTED]', risk: 'CRITICAL' },
+      { name: 'PRIVATE_KEY', pattern: /-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----/gi, label: '[RSA_PRIVATE_KEY_REDACTED]', risk: 'CRITICAL' },
+      { name: 'DATABASE_URI', pattern: /(?:jdbc:)?(?:postgresql|postgres|mysql|mongodb|mongodb\+srv|redis|oracle|mssql):\/\/[a-zA-Z0-9_]+:[^@\s]+@[a-zA-Z0-9_.-]+:\d+\/[a-zA-Z0-9_.-]+/gi, label: '[DATABASE_URI_REDACTED]', risk: 'CRITICAL' },
+      { name: 'AWS_ACCESS_KEY', pattern: /\b(AKIA|ASIA|ABIA|ACCA)[0-9A-Z]{16}\b/g, label: '[AWS_ACCESS_KEY_REDACTED]', risk: 'CRITICAL' },
+      { name: 'AWS_SECRET_KEY', pattern: /(?:aws_secret_access_key|Secret Access Key|SecretKey|aws_secret)\s*[:=]\s*["']?([a-zA-Z0-9\/+]{40})["']?/gi, label: 'aws_secret_access_key: [AWS_SECRET_KEY_REDACTED]', risk: 'CRITICAL' },
+      { name: 'OPENAI_API_KEY', pattern: /\bsk-(?:proj-|admin-)?[a-zA-Z0-9_-]{32,128}\b/g, label: '[OPENAI_API_KEY_REDACTED]', risk: 'CRITICAL' },
+      { name: 'ANTHROPIC_API_KEY', pattern: /\bsk-ant-api[0-9a-zA-Z-_]{60,128}\b/g, label: '[ANTHROPIC_API_KEY_REDACTED]', risk: 'CRITICAL' },
       { name: 'GITHUB_TOKEN', pattern: /\b(ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9_]{36,255}\b/g, label: '[GITHUB_TOKEN_REDACTED]', risk: 'CRITICAL' },
       { name: 'SLACK_WEBHOOK', pattern: /https:\/\/hooks\.slack\.com\/services\/T[a-zA-Z0-9_]+\/B[a-zA-Z0-9_]+\/[a-zA-Z0-9_]+/g, label: '[SLACK_WEBHOOK_REDACTED]', risk: 'CRITICAL' },
+      { name: 'SLACK_BOT_TOKEN', pattern: /\bxox[baprs]-[a-zA-Z0-9_-]{10,255}\b/g, label: '[SLACK_TOKEN_REDACTED]', risk: 'CRITICAL' },
       { name: 'GCP_API_KEY', pattern: /\bAIza[0-9A-Za-z-_]{35}\b/g, label: '[GCP_API_KEY_REDACTED]', risk: 'CRITICAL' },
-      { name: 'STRIPE_KEY', pattern: /\b(sk|pk)_(test|live)_[0-9a-zA-Z]{24,99}\b/g, label: '[STRIPE_KEY_REDACTED]', risk: 'CRITICAL' },
+      { name: 'STRIPE_KEY', pattern: /\b(sk|pk|rk)_(test|live)_[0-9a-zA-Z]{24,99}\b/g, label: '[STRIPE_KEY_REDACTED]', risk: 'CRITICAL' },
+      { name: 'SENDGRID_API_KEY', pattern: /\bSG\.[a-zA-Z0-9_-]{22}\.[a-zA-Z0-9_-]{43}\b/g, label: '[SENDGRID_KEY_REDACTED]', risk: 'CRITICAL' },
+      { name: 'TWILIO_API_KEY', pattern: /\b(AC|SK)[a-f0-9]{32}\b/g, label: '[TWILIO_KEY_REDACTED]', risk: 'CRITICAL' },
+      { name: 'PASSWORD_ASSIGNMENT', pattern: /(?:password|passwd|pass|pwd|api_secret|auth_secret)\s*[:=]\s*["']([^"'\s]{6,64})["']/gi, label: 'password: "[PASSWORD_REDACTED]"', risk: 'CRITICAL' },
+      { name: 'HINGLISH_SECRET_JARGON', pattern: /(?:chabi|chabhi|khufia_code|gupta_key|chupi_key)\s*[:=]\s*["']?([^"'\s]{6,64})["']?/gi, label: 'chabi: "[HINGLISH_SECRET_REDACTED]"', risk: 'CRITICAL' },
       { name: 'JWT_BEARER', pattern: /Bearer\s+eyJ[a-zA-Z0-9_\-\.=]{20,}/gi, label: 'Bearer [JWT_TOKEN_REDACTED]', risk: 'CRITICAL' },
       { name: 'AADHAAR_CARD', pattern: /\b[2-9]{1}\d{3}\s?\d{4}\s?\d{4}\b/g, label: '[AADHAAR_NUMBER_REDACTED]', risk: 'CRITICAL' },
       { name: 'PAN_CARD', pattern: /\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b/g, label: '[PAN_CARD_REDACTED]', risk: 'CRITICAL' },
+      { name: 'IBAN_NUMBER', pattern: /\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/g, label: '[IBAN_REDACTED]', risk: 'HIGH' },
+      { name: 'SWIFT_BIC', pattern: /\b[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?\b/g, label: '[SWIFT_BIC_REDACTED]', risk: 'MEDIUM' },
       { name: 'EMAIL', pattern: /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g, label: '[EMAIL_REDACTED]', risk: 'HIGH' },
       { name: 'SSN', pattern: /\b\d{3}-\d{2}-\d{4}\b/g, label: '[SSN_REDACTED]', risk: 'CRITICAL' },
       { name: 'CREDIT_CARD', pattern: /\b(?:\d[ -]*?){13,19}\b/g, label: '[CREDIT_CARD_REDACTED]', risk: 'CRITICAL' },
@@ -140,7 +148,6 @@
     }
   }
 
-  // Interactive Security Threat Warning Overlay Popup
   function showThreatWarningModal(targetElement, rawText, sanitizedText, detectedTokens, onConfirmRedact, onBypass) {
     if (activeModal) activeModal.remove();
 
@@ -216,7 +223,6 @@
         if (el.dataset.psAttached) return;
         el.dataset.psAttached = 'true';
 
-        // Paste Event Interception with Threat Confirmation Modal
         el.addEventListener('paste', (e) => {
           if (!config.enabled || !config.autoRedactOnPaste) return;
           const pastedText = (e.clipboardData || window.clipboardData).getData('text');
@@ -227,12 +233,10 @@
             const currentText = getElementText(el);
 
             showThreatWarningModal(el, pastedText, sanitized, detectedTokens, 
-              // Action 1: Confirm Redact
               () => {
                 setElementText(el, currentText + sanitized);
                 logTransactionToBackend(pastedText, count);
               },
-              // Action 2: Bypass
               () => {
                 setElementText(el, currentText + pastedText);
               }
@@ -240,7 +244,6 @@
           }
         });
 
-        // Keydown Enter (Submit) Interception with Threat Confirmation Modal
         el.addEventListener('keydown', (e) => {
           if (!config.enabled || !config.autoRedactOnSubmit) return;
           if (e.key === 'Enter' && !e.shiftKey) {
@@ -250,12 +253,10 @@
             if (count > 0) {
               e.preventDefault();
               showThreatWarningModal(el, text, sanitized, detectedTokens,
-                // Action 1: Confirm Redact
                 () => {
                   setElementText(el, sanitized);
                   logTransactionToBackend(text, count);
                 },
-                // Action 2: Bypass
                 () => {
                   setElementText(el, text);
                 }

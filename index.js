@@ -10,10 +10,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // In-memory telemetry & audit ledger
 const metrics = {
-  totalRequests: 4125,
-  totalRedactions: 18952,
-  threatsBlocked: 1485,
-  ocrScansPerformed: 325,
+  totalRequests: 4380,
+  totalRedactions: 19820,
+  threatsBlocked: 1610,
+  ocrScansPerformed: 350,
   startTime: Date.now()
 };
 
@@ -76,7 +76,7 @@ function detectUserLanguage(text, selectedOverride) {
   }
 
   // Hinglish / Minglish keywords check
-  if (/\b(karo|kare|karte|waqt|ho|gaya|hai|raha|naam|mera|apna|tapaasa|zhala|ahe|krupaya)\b/i.test(text)) {
+  if (/\b(karo|kare|karte|waqt|ho|gaya|hai|raha|naam|mera|apna|tapaasa|zhala|ahe|krupaya|chabi|chabhi|khufia)\b/i.test(text)) {
     if (/\b(zhala|ahe|krupaya|tapaasa|mhnun)\b/i.test(text)) return 'mr';
     return 'hi';
   }
@@ -140,10 +140,10 @@ function sanitizeText(text, options = {}) {
   const tokensMap = [];
 
   const rules = [
-    // 1. PRIVATE KEYS (RSA, OpenSSH, EC)
+    // 1. RSA / OPENSSH / EC / PGP PRIVATE KEYS
     {
       type: 'PRIVATE_KEY',
-      pattern: /-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----/gi,
+      pattern: /-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----/gi,
       label: '[RSA_PRIVATE_KEY_REDACTED]',
       confidence: 100.0,
       risk: 'CRITICAL'
@@ -151,28 +151,43 @@ function sanitizeText(text, options = {}) {
     // 2. DATABASE CONNECTION URIs
     {
       type: 'DATABASE_URI',
-      pattern: /(?:jdbc:)?(?:postgresql|postgres|mysql|mongodb|redis|oracle):\/\/[a-zA-Z0-9_]+:[^@\s]+@[a-zA-Z0-9_.-]+:\d+\/[a-zA-Z0-9_.-]+/gi,
+      pattern: /(?:jdbc:)?(?:postgresql|postgres|mysql|mongodb|mongodb\+srv|redis|oracle|mssql):\/\/[a-zA-Z0-9_]+:[^@\s]+@[a-zA-Z0-9_.-]+:\d+\/[a-zA-Z0-9_.-]+/gi,
       label: '[DATABASE_URI_REDACTED]',
       confidence: 100.0,
       risk: 'CRITICAL'
     },
-    // 3. AWS ACCESS KEY
+    // 3. AWS ACCESS KEY & SECRET KEY
     {
       type: 'AWS_ACCESS_KEY',
-      pattern: /\b(AKIA|ASIA)[0-9A-Z]{16}\b/g,
+      pattern: /\b(AKIA|ASIA|ABIA|ACCA)[0-9A-Z]{16}\b/g,
       label: '[AWS_ACCESS_KEY_REDACTED]',
       confidence: 100.0,
       risk: 'CRITICAL'
     },
-    // 4. AWS SECRET KEY
     {
       type: 'AWS_SECRET_KEY',
-      pattern: /(?:aws_secret_access_key|Secret Access Key|SecretKey)\s*[:=]\s*["']?([a-zA-Z0-9\/+]{40})["']?/gi,
+      pattern: /(?:aws_secret_access_key|Secret Access Key|SecretKey|aws_secret)\s*[:=]\s*["']?([a-zA-Z0-9\/+]{40})["']?/gi,
       label: 'aws_secret_access_key: [AWS_SECRET_KEY_REDACTED]',
       confidence: 99.8,
       risk: 'CRITICAL'
     },
-    // 5. GITHUB TOKENS
+    // 4. OPENAI API KEYS
+    {
+      type: 'OPENAI_API_KEY',
+      pattern: /\bsk-(?:proj-|admin-)?[a-zA-Z0-9_-]{32,128}\b/g,
+      label: '[OPENAI_API_KEY_REDACTED]',
+      confidence: 100.0,
+      risk: 'CRITICAL'
+    },
+    // 5. ANTHROPIC CLAUDE API KEYS
+    {
+      type: 'ANTHROPIC_API_KEY',
+      pattern: /\bsk-ant-api[0-9a-zA-Z-_]{60,128}\b/g,
+      label: '[ANTHROPIC_API_KEY_REDACTED]',
+      confidence: 100.0,
+      risk: 'CRITICAL'
+    },
+    // 6. GITHUB TOKENS & PATs
     {
       type: 'GITHUB_TOKEN',
       pattern: /\b(ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9_]{36,255}\b/g,
@@ -180,7 +195,7 @@ function sanitizeText(text, options = {}) {
       confidence: 100.0,
       risk: 'CRITICAL'
     },
-    // 6. SLACK WEBHOOKS
+    // 7. SLACK WEBHOOKS & BOT TOKENS
     {
       type: 'SLACK_WEBHOOK',
       pattern: /https:\/\/hooks\.slack\.com\/services\/T[a-zA-Z0-9_]+\/B[a-zA-Z0-9_]+\/[a-zA-Z0-9_]+/g,
@@ -188,7 +203,14 @@ function sanitizeText(text, options = {}) {
       confidence: 99.9,
       risk: 'CRITICAL'
     },
-    // 7. GCP API KEYS
+    {
+      type: 'SLACK_BOT_TOKEN',
+      pattern: /\bxox[baprs]-[a-zA-Z0-9_-]{10,255}\b/g,
+      label: '[SLACK_TOKEN_REDACTED]',
+      confidence: 99.9,
+      risk: 'CRITICAL'
+    },
+    // 8. GCP API KEYS
     {
       type: 'GCP_API_KEY',
       pattern: /\bAIza[0-9A-Za-z-_]{35}\b/g,
@@ -196,15 +218,46 @@ function sanitizeText(text, options = {}) {
       confidence: 99.7,
       risk: 'CRITICAL'
     },
-    // 8. STRIPE KEYS
+    // 9. STRIPE KEYS
     {
       type: 'STRIPE_KEY',
-      pattern: /\b(sk|pk)_(test|live)_[0-9a-zA-Z]{24,99}\b/g,
+      pattern: /\b(sk|pk|rk)_(test|live)_[0-9a-zA-Z]{24,99}\b/g,
       label: '[STRIPE_KEY_REDACTED]',
       confidence: 99.8,
       risk: 'CRITICAL'
     },
-    // 9. JWT & BEARER TOKENS
+    // 10. SENDGRID & TWILIO KEYS
+    {
+      type: 'SENDGRID_API_KEY',
+      pattern: /\bSG\.[a-zA-Z0-9_-]{22}\.[a-zA-Z0-9_-]{43}\b/g,
+      label: '[SENDGRID_KEY_REDACTED]',
+      confidence: 99.9,
+      risk: 'CRITICAL'
+    },
+    {
+      type: 'TWILIO_API_KEY',
+      pattern: /\b(AC|SK)[a-f0-9]{32}\b/g,
+      label: '[TWILIO_KEY_REDACTED]',
+      confidence: 99.5,
+      risk: 'CRITICAL'
+    },
+    // 11. HARDCODED PASSWORDS & ASSIGNMENT STATEMENTS
+    {
+      type: 'PASSWORD_ASSIGNMENT',
+      pattern: /(?:password|passwd|pass|pwd|api_secret|auth_secret)\s*[:=]\s*["']([^"'\s]{6,64})["']/gi,
+      label: 'password: "[PASSWORD_REDACTED]"',
+      confidence: 99.2,
+      risk: 'CRITICAL'
+    },
+    // 12. HINGLISH / MINGLISH SENSITIVE JARGON ASSIGNMENTS
+    {
+      type: 'HINGLISH_SECRET_JARGON',
+      pattern: /(?:chabi|chabhi|khufia_code|gupta_key|chupi_key)\s*[:=]\s*["']?([^"'\s]{6,64})["']?/gi,
+      label: 'chabi: "[HINGLISH_SECRET_REDACTED]"',
+      confidence: 98.9,
+      risk: 'CRITICAL'
+    },
+    // 13. JWT & BEARER TOKENS
     {
       type: 'JWT_BEARER',
       pattern: /Bearer\s+eyJ[a-zA-Z0-9_\-\.=]{20,}/gi,
@@ -212,7 +265,7 @@ function sanitizeText(text, options = {}) {
       confidence: 99.6,
       risk: 'CRITICAL'
     },
-    // 10. AADHAAR CARD (India 12-Digit)
+    // 14. AADHAAR CARD (India 12-Digit UIDAI)
     {
       type: 'AADHAAR_CARD',
       pattern: /\b[2-9]{1}\d{3}\s?\d{4}\s?\d{4}\b/g,
@@ -220,7 +273,7 @@ function sanitizeText(text, options = {}) {
       confidence: 98.5,
       risk: 'CRITICAL'
     },
-    // 11. PAN CARD (India 10-Char)
+    // 15. PAN CARD (India 10-Char Tax ID)
     {
       type: 'PAN_CARD',
       pattern: /\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b/g,
@@ -228,7 +281,23 @@ function sanitizeText(text, options = {}) {
       confidence: 99.1,
       risk: 'CRITICAL'
     },
-    // 12. EMAIL ADDRESSES
+    // 16. IBAN BANK ACCOUNT NUMBERS
+    {
+      type: 'IBAN_NUMBER',
+      pattern: /\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/g,
+      label: '[IBAN_REDACTED]',
+      confidence: 98.8,
+      risk: 'HIGH'
+    },
+    // 17. SWIFT / BIC CODES
+    {
+      type: 'SWIFT_BIC',
+      pattern: /\b[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?\b/g,
+      label: '[SWIFT_BIC_REDACTED]',
+      confidence: 97.5,
+      risk: 'MEDIUM'
+    },
+    // 18. EMAIL ADDRESSES
     {
       type: 'EMAIL',
       pattern: /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g,
@@ -236,7 +305,7 @@ function sanitizeText(text, options = {}) {
       confidence: 99.4,
       risk: 'HIGH'
     },
-    // 13. SSN
+    // 19. SOCIAL SECURITY NUMBERS (US SSN)
     {
       type: 'SSN',
       pattern: /\b\d{3}-\d{2}-\d{4}\b/g,
@@ -244,7 +313,7 @@ function sanitizeText(text, options = {}) {
       confidence: 99.9,
       risk: 'CRITICAL'
     },
-    // 14. CREDIT CARDS
+    // 20. CREDIT CARDS
     {
       type: 'CREDIT_CARD',
       pattern: /\b(?:\d[ -]*?){13,19}\b/g,
@@ -259,7 +328,7 @@ function sanitizeText(text, options = {}) {
       confidence: 99.8,
       risk: 'CRITICAL'
     },
-    // 15. PHONE NUMBERS
+    // 21. PHONE NUMBERS
     {
       type: 'PHONE',
       pattern: /\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g,
@@ -267,7 +336,7 @@ function sanitizeText(text, options = {}) {
       confidence: 96.5,
       risk: 'MEDIUM'
     },
-    // 16. IP ADDRESSES
+    // 22. IP ADDRESSES
     {
       type: 'IP_ADDRESS',
       pattern: /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g,
@@ -360,7 +429,7 @@ function sanitizeText(text, options = {}) {
   };
 
   auditLedger.unshift(auditEntry);
-  if (auditLedger.length > 35) auditLedger.pop();
+  if (auditLedger.length > 40) auditLedger.pop();
 
   return {
     id: txId,
@@ -399,7 +468,7 @@ app.post('/api/sanitize', (req, res) => {
   });
 });
 
-// Transaction Lookup by ID for synchronized website inspection
+// Transaction Lookup by ID
 app.get('/api/transaction/:txId', (req, res) => {
   const { txId } = req.params;
   const entry = auditLedger.find(t => t.id === txId);
