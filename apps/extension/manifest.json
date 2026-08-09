@@ -1,16 +1,21 @@
 {
   "manifest_version": 3,
   "name": "PrivacyShield — Universal Zero-Trust AI Guard",
-  "version": "2.0.0",
-  "description": "Zero-Trust Real-Time PII & Secret Redaction Guard for ChatGPT, Claude, Gemini, Perplexity, DeepSeek, and custom AI platforms.",
+  "version": "2.4.0",
+  "description": "Zero-Trust Real-Time PII & Secret Redaction Guard for ChatGPT, Claude, Gemini, Perplexity, DeepSeek, and custom AI chat interfaces.",
   "action": {
-    "default_popup": "src/popup/index.html",
-    "default_title": "PrivacyShield Options & Status",
+    "default_popup": "popup.html",
+    "default_title": "PrivacyShield Guard Status",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   },
   "permissions": [
     "storage",
@@ -26,12 +31,10 @@
     "*://*.zerops.app/*",
     "http://localhost:3000/*",
     "http://127.0.0.1:3000/*",
-    "http://127.0.0.1:8000/*",
     "https://*/*"
   ],
   "background": {
-    "service_worker": "src/background/serviceWorker.js",
-    "type": "module"
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
@@ -44,9 +47,13 @@
         "*://*.deepseek.com/*",
         "https://chatgpt.com/*",
         "https://chat.openai.com/*",
-        "https://claude.ai/*"
+        "https://claude.ai/*",
+        "https://gemini.google.com/*",
+        "https://www.perplexity.ai/*",
+        "https://chat.deepseek.com/*"
       ],
-      "js": ["src/content/injector.js"],
+      "js": ["content.js"],
+      "css": ["content.css"],
       "run_at": "document_idle"
     }
   ]

@@ -1,14 +1,17 @@
 const fs = require('fs');
 const path = require('path');
-const zlib = require('zlib');
 
-// Simple zip file builder in pure Node.js (no external deps)
+// Pure Node.js zip file builder (no external dependencies)
 function createZip(sourceDir, outputFile) {
   const files = [];
 
   function readDirRecursive(dir, base) {
     const list = fs.readdirSync(dir);
     list.forEach(file => {
+      // Exclude dev/build directories and unnecessary configs
+      if (['src', 'node_modules', 'tsconfig.json', 'vite.config.ts', '.DS_Store'].includes(file)) {
+        return;
+      }
       const filePath = path.join(dir, file);
       const relPath = path.join(base, file).replace(/\\/g, '/');
       const stat = fs.statSync(filePath);
@@ -90,7 +93,7 @@ function createZip(sourceDir, outputFile) {
 
   const finalZip = Buffer.concat([...localHeaders, cdBuffer, eocd]);
   fs.writeFileSync(outputFile, finalZip);
-  console.log(`Created ${outputFile} (${finalZip.length} bytes)`);
+  console.log(`Created clean zip ${outputFile} (${finalZip.length} bytes, ${files.length} files)`);
 }
 
 // CRC32 Helper
