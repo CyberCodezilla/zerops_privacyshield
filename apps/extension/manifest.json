@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "Privacy Shield — Universal AI Privacy Guard",
+  "version": "2.0.0",
+  "description": "Zero-Trust Real-Time PII & Secret Redaction Guard for ChatGPT, Claude, Gemini, Perplexity, DeepSeek, and custom AI platforms.",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "*://*.openai.com/*",
+    "*://*.chatgpt.com/*",
+    "*://*.claude.ai/*",
+    "*://*.google.com/*",
+    "*://*.perplexity.ai/*",
+    "*://*.deepseek.com/*",
+    "*://*.zerops.app/*",
+    "http://localhost:3000/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.openai.com/*",
+        "*://*.chatgpt.com/*",
+        "*://*.claude.ai/*",
+        "*://*.google.com/*",
+        "*://*.perplexity.ai/*",
+        "*://*.deepseek.com/*",
+        "*://*/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_end"
+    }
+  ]
+}
