@@ -4,11 +4,12 @@ import { Playground } from './components/Playground';
 import { AuditLedger } from './components/AuditLedger';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { DevDocs } from './components/DevDocs';
+import { OcrScanner } from './components/OcrScanner';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'playground' | 'audit' | 'analytics' | 'docs'>('playground');
+  const [activeTab, setActiveTab] = useState<'playground' | 'audit' | 'analytics' | 'ocr' | 'docs'>('playground');
   const [isBackendHealthy, setIsBackendHealthy] = useState<boolean>(false);
   const [auditRefreshTrigger, setAuditRefreshTrigger] = useState<number>(0);
 
@@ -58,6 +59,10 @@ export const App: React.FC = () => {
 
         {activeTab === 'docs' && (
           <DevDocs />
+        )}
+
+        {activeTab === 'ocr' && (
+          <OcrScanner />
         )}
       </main>
 

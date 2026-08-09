@@ -1,9 +1,9 @@
 import React from 'react';
-import { Shield, Play, FileText, BarChart3, Code2, Server } from 'lucide-react';
+import { Shield, Play, FileText, BarChart3, Code2, Server, ScanLine } from 'lucide-react';
 
 interface NavbarProps {
-  activeTab: 'playground' | 'audit' | 'analytics' | 'docs';
-  setActiveTab: (tab: 'playground' | 'audit' | 'analytics' | 'docs') => void;
+  activeTab: 'playground' | 'audit' | 'analytics' | 'ocr' | 'docs';
+  setActiveTab: (tab: 'playground' | 'audit' | 'analytics' | 'ocr' | 'docs') => void;
   isBackendHealthy: boolean;
 }
 
@@ -76,6 +76,15 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, isBacke
           >
             <Code2 style={{ width: '16px', height: '16px' }} />
             Developer Setup & SDK
+          </button>
+
+          <button
+            onClick={() => setActiveTab('ocr')}
+            className={`btn ${activeTab === 'ocr' ? 'btn-primary' : 'btn-ghost'}`}
+            style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+          >
+            <ScanLine style={{ width: '16px', height: '16px' }} />
+            OCR Scanner
           </button>
         </nav>
 

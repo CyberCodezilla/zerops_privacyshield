@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { getAuditLogs, getAnalytics, clearLogs } from '../db/index';
-import { scanAndSanitize } from '../engine/pii';
+import { scanAndSanitize, redactPII } from '../engine/pii';
 import { getActivePolicy, updateActivePolicy } from '../engine/policy';
 
 export async function registerAuditRoutes(fastify: FastifyInstance) {
@@ -36,7 +36,7 @@ export async function registerAuditRoutes(fastify: FastifyInstance) {
     const text = body.text || '';
     const policy = getActivePolicy();
 
-    const result = scanAndSanitize(text, policy.activeProfile);
+    const result = await redactPII(text, policy.activeProfile);
     return reply.send({
       sanitizedText: result.sanitizedText,
       matches: result.matches,

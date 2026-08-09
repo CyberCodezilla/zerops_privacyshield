@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { scanAndSanitize } from '../engine/pii';
+import { scanAndSanitize, redactPII } from '../engine/pii';
 import { RequestRehydrationSession } from '../engine/rehydrate';
 import { forwardToUpstream } from '../services/upstream';
 import { insertAuditLog } from '../db/index';
@@ -92,7 +92,7 @@ export async function registerChatRoutes(fastify: FastifyInstance) {
 
       for (const msg of body.messages) {
         if (typeof msg.content === 'string') {
-          const result = scanAndSanitize(msg.content, policy.activeProfile);
+          const result = await redactPII(msg.content, policy.activeProfile);
           rehydrationSession.registerTokens(result.tokenMap);
           result.detectedPiiTypes.forEach(t => allDetectedTypes.add(t));
           totalTokensRedacted += result.tokensRedactedCount;
@@ -109,7 +109,7 @@ export async function registerChatRoutes(fastify: FastifyInstance) {
           const sanitizedParts: any[] = [];
           for (const part of msg.content) {
             if (part.type === 'text' && typeof part.text === 'string') {
-              const result = scanAndSanitize(part.text, policy.activeProfile);
+              const result = await redactPII(part.text, policy.activeProfile);
               rehydrationSession.registerTokens(result.tokenMap);
               result.detectedPiiTypes.forEach(t => allDetectedTypes.add(t));
               totalTokensRedacted += result.tokensRedactedCount;

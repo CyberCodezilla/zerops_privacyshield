@@ -7,7 +7,7 @@
     "apps/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace=apps/api && npm run build --workspace=apps/web",
+    "build": "npm run build --workspace=apps/api && npm run build --workspace=apps/web && npm run build --workspace=apps/extension",
     "dev": "npm run dev:api & npm run dev:web",
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:web": "npm run dev --workspace=apps/web",

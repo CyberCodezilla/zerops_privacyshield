@@ -1,10 +1,12 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import formbody from '@fastify/formbody';
+import multipart from '@fastify/multipart';
 import dotenv from 'dotenv';
 import { initDatabase } from './db/index';
 import { registerChatRoutes } from './routes/chat';
 import { registerAuditRoutes } from './routes/audit';
+import { registerOcrRoutes } from './routes/ocr';
 
 dotenv.config();
 
@@ -25,6 +27,7 @@ async function startServer() {
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
     });
     await fastify.register(formbody);
+    await fastify.register(multipart, { limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB max
 
     // 2. Health & Root Endpoints
     fastify.get('/health', async () => {
@@ -41,6 +44,7 @@ async function startServer() {
     // 4. Register API Routes
     await registerChatRoutes(fastify);
     await registerAuditRoutes(fastify);
+    await registerOcrRoutes(fastify);
 
     // 5. Start Listening
     await fastify.listen({ port, host });
