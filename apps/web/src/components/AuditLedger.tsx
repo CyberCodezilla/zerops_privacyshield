@@ -19,6 +19,15 @@ interface AuditLedgerProps {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
+function getModelLogo(modelName: string): string {
+  const norm = (modelName || '').toLowerCase();
+  if (norm.includes('claude') || norm.includes('anthropic')) return '/assets/claude.svg';
+  if (norm.includes('gemini') || norm.includes('google')) return '/assets/gemini.svg';
+  if (norm.includes('deepseek')) return '/assets/deepseek.svg';
+  if (norm.includes('perplexity') || norm.includes('sonar')) return '/assets/perplexity.svg';
+  return '/assets/chatgpt.svg';
+}
+
 export const AuditLedger: React.FC<AuditLedgerProps> = ({ onRefreshTrigger }) => {
   const [logs, setLogs] = useState<AuditLogItem[]>([]);
   const [total, setTotal] = useState<number>(0);
@@ -263,7 +272,14 @@ export const AuditLedger: React.FC<AuditLedgerProps> = ({ onRefreshTrigger }) =>
                     {log.proxy_latency_ms} ms
                   </td>
                   <td style={{ padding: '12px 16px', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                    {log.upstream_model}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <img
+                        src={getModelLogo(log.upstream_model)}
+                        alt="Logo"
+                        style={{ width: '16px', height: '16px', objectFit: 'contain' }}
+                      />
+                      <span>{log.upstream_model}</span>
+                    </div>
                   </td>
                   <td style={{ padding: '12px 16px', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', color: '#d1d5db' }}>
                     {log.sanitized_prompt}

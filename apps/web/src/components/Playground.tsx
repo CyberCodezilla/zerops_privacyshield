@@ -44,6 +44,32 @@ interface PlaygroundProps {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
+export interface AIPlatformInfo {
+  id: string;
+  name: string;
+  provider: string;
+  icon: string;
+  spec: string;
+}
+
+export const AI_PLATFORMS: AIPlatformInfo[] = [
+  { id: 'gpt-4o', name: 'ChatGPT', provider: 'OpenAI', icon: '/assets/chatgpt.svg', spec: 'GPT-4o & o1' },
+  { id: 'claude-3-5-sonnet', name: 'Claude', provider: 'Anthropic', icon: '/assets/claude.svg', spec: '3.5 Sonnet' },
+  { id: 'gemini-1.5-pro', name: 'Google Gemini', provider: 'Google', icon: '/assets/gemini.svg', spec: '1.5 Pro & Flash' },
+  { id: 'deepseek-r1', name: 'DeepSeek', provider: 'DeepSeek', icon: '/assets/deepseek.svg', spec: 'V3 & R1' },
+  { id: 'perplexity-pro', name: 'Perplexity AI', provider: 'Perplexity', icon: '/assets/perplexity.svg', spec: 'Pro Search' }
+];
+
+export function getModelLogo(modelName: string): string {
+  const norm = (modelName || '').toLowerCase();
+  if (norm.includes('claude') || norm.includes('anthropic')) return '/assets/claude.svg';
+  if (norm.includes('gemini') || norm.includes('google')) return '/assets/gemini.svg';
+  if (norm.includes('deepseek')) return '/assets/deepseek.svg';
+  if (norm.includes('perplexity') || norm.includes('sonar')) return '/assets/perplexity.svg';
+  return '/assets/chatgpt.svg';
+}
+
+
 function renderAnnotatedOutput(text: string, tokenMap: Record<string, string>) {
   if (!text || !tokenMap || Object.keys(tokenMap).length === 0) {
     return <span>{text}</span>;
@@ -373,6 +399,53 @@ export const Playground: React.FC<PlaygroundProps> = ({ onLogCreated }) => {
         </div>
       </div>
 
+      {/* Supported AI Platforms Official Logo Selector */}
+      <div className="glass-panel" style={{ padding: '16px 20px', marginBottom: '20px' }}>
+        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span>SUPPORTED AI PLATFORMS & OFFICIAL LOGO SELECTION</span>
+          <span className="badge badge-emerald" style={{ fontSize: '0.7rem' }}>ZERO-TRUST SANITIZATION ACTIVE</span>
+        </div>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          {AI_PLATFORMS.map((platform) => {
+            const isSelected = model === platform.id || (model.startsWith('gpt') && platform.id === 'gpt-4o');
+            return (
+              <div
+                key={platform.id}
+                onClick={() => setModel(platform.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '10px 16px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: isSelected ? 'rgba(99, 102, 241, 0.18)' : 'rgba(0, 0, 0, 0.35)',
+                  border: isSelected ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  flex: '1 1 180px',
+                  boxShadow: isSelected ? '0 0 15px rgba(99, 102, 241, 0.25)' : 'none'
+                }}
+              >
+                <img
+                  src={platform.icon}
+                  alt={`${platform.name} logo`}
+                  style={{ width: '28px', height: '28px', objectFit: 'contain' }}
+                />
+                <div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ffffff' }}>{platform.name}</div>
+                  <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>{platform.spec}</div>
+                </div>
+                {isSelected && (
+                  <span style={{ marginLeft: 'auto', fontSize: '0.65rem', background: 'var(--primary)', color: '#ffffff', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                    ACTIVE
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Compliance Policy & Blacklist Control Panel */}
       <PolicyManager />
 
@@ -416,25 +489,35 @@ export const Playground: React.FC<PlaygroundProps> = ({ onLogCreated }) => {
                 <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
                   Target LLM Model:
                 </label>
-                <select
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: 'var(--radius-sm)',
-                    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                    border: '1px solid var(--border-color)',
-                    color: '#ffffff',
-                    fontSize: '0.85rem'
-                  }}
-                >
-                  <option value="gpt-4o">gpt-4o (OpenAI)</option>
-                  <option value="gpt-4o-mini">gpt-4o-mini (OpenAI)</option>
-                  <option value="claude-3-5-sonnet">claude-3-5-sonnet (Anthropic)</option>
-                  <option value="gemini-1.5-pro">gemini-1.5-pro (Google)</option>
-                </select>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <img
+                    src={getModelLogo(model)}
+                    alt="Target Model Logo"
+                    style={{ width: '22px', height: '22px', objectFit: 'contain' }}
+                  />
+                  <select
+                    value={model}
+                    onChange={(e) => setModel(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      borderRadius: 'var(--radius-sm)',
+                      backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                      border: '1px solid var(--border-color)',
+                      color: '#ffffff',
+                      fontSize: '0.85rem'
+                    }}
+                  >
+                    <option value="gpt-4o">ChatGPT (OpenAI gpt-4o)</option>
+                    <option value="gpt-4o-mini">ChatGPT (OpenAI gpt-4o-mini)</option>
+                    <option value="claude-3-5-sonnet">Claude (Anthropic 3.5 Sonnet)</option>
+                    <option value="gemini-1.5-pro">Google Gemini (1.5 Pro)</option>
+                    <option value="deepseek-r1">DeepSeek (V3 & R1)</option>
+                    <option value="perplexity-pro">Perplexity AI (Pro Search)</option>
+                  </select>
+                </div>
               </div>
+
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', paddingTop: '18px' }}>
                 <input
