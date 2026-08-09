@@ -3,11 +3,6 @@
   "name": "PrivacyShield — Zero-Trust AI Privacy",
   "version": "1.0.0",
   "description": "Client-side Zero-Knowledge PII & Secret Redaction for ChatGPT and Claude",
-  "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
-  },
   "action": {
     "default_popup": "src/popup/index.html",
     "default_title": "PrivacyShield Options & Status"
@@ -26,7 +21,7 @@
     "https://*/*"
   ],
   "background": {
-    "service_worker": "src/background/serviceWorker.ts",
+    "service_worker": "src/background/serviceWorker.js",
     "type": "module"
   },
   "content_scripts": [
@@ -36,7 +31,7 @@
         "https://chat.openai.com/*",
         "https://claude.ai/*"
       ],
-      "js": ["src/content/injector.ts"],
+      "js": ["src/content/injector.js"],
       "run_at": "document_idle"
     }
   ]

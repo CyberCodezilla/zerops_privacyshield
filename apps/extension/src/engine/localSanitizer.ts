@@ -73,7 +73,7 @@ export async function sanitizeTextClientSide(
   };
 
   // 1. Secrets & Credentials
-  addRegexSpans(/\bsk_(?:live|proj|test)_[a-zA-Z0-9]{24,}\b/g, 'SECRET_KEY');
+  addRegexSpans(/\bsk[-_][a-zA-Z0-9_-]{20,}\b/gi, 'SECRET_KEY');
   addRegexSpans(/\bAKIA[0-9A-Z]{16}\b/g, 'SECRET_KEY');
   addRegexSpans(/\beyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\b/g, 'SECRET_KEY');
   addRegexSpans(/\b(?:postgres|postgresql|mongodb|mysql):\/\/[a-zA-Z0-9_]+:[^@\s]+@[a-zA-Z0-9_.-]+:\d+\/[a-zA-Z0-9_.-]+\b/g, 'DB_CONNECTION_STRING');

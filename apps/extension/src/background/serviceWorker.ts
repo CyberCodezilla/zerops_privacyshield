@@ -1,4 +1,30 @@
-import { getConfig } from '../utils/storage';
+interface ExtensionConfig {
+  apiUrl: string;
+  zeroKnowledge: boolean;
+  activeProfile: 'STRICT' | 'BALANCED' | 'PERMISSIVE';
+  enabled: boolean;
+  statsRedactedCount: number;
+}
+
+const DEFAULT_CONFIG: ExtensionConfig = {
+  apiUrl: 'https://api-zerops.privacyshield.app',
+  zeroKnowledge: true,
+  activeProfile: 'BALANCED',
+  enabled: true,
+  statsRedactedCount: 0
+};
+
+async function getConfig(): Promise<ExtensionConfig> {
+  return new Promise((resolve) => {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+      chrome.storage.sync.get(DEFAULT_CONFIG, (items) => {
+        resolve(items as ExtensionConfig);
+      });
+    } else {
+      resolve(DEFAULT_CONFIG);
+    }
+  });
+}
 
 console.log('[PrivacyShield Extension] Background service worker initialized.');
 
@@ -6,11 +32,10 @@ chrome.runtime.onInstalled.addListener(() => {
   console.log('[PrivacyShield Extension] Installed successfully.');
 });
 
-// Listener for background messages from content scripts or popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'GET_CONFIG') {
     getConfig().then((config) => sendResponse({ success: true, config }));
-    return true; // Keep message channel open for async response
+    return true;
   }
   if (request.action === 'CHECK_HEALTH') {
     getConfig().then(async (config) => {
@@ -24,3 +49,5 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 });
+
+export {};

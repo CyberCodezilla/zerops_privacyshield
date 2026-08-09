@@ -125,7 +125,7 @@ export async function redactPII(
   };
 
   // 1a. Secrets & Infrastructure (ALL profiles)
-  collectRegexSpans(/\bsk_(?:live|proj|test)_[a-zA-Z0-9]{24,}\b/g, 'SECRET_KEY');
+  collectRegexSpans(/\bsk[-_][a-zA-Z0-9_-]{20,}\b/gi, 'SECRET_KEY');
   collectRegexSpans(/\bAKIA[0-9A-Z]{16}\b/g, 'SECRET_KEY');
   collectRegexSpans(/\beyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\b/g, 'SECRET_KEY');
   collectRegexSpans(/\b(?:postgres|postgresql|mongodb|mysql):\/\/[a-zA-Z0-9_]+:[^@\s]+@[a-zA-Z0-9_.-]+:\d+\/[a-zA-Z0-9_.-]+\b/g, 'DB_CONNECTION_STRING');
