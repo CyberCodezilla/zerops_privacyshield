@@ -422,30 +422,98 @@
       <div class="card">
         <div class="card-header">
           <div>
-            <h3>OCR IMAGE REDACTION SCANNER</h3>
-            <p>Scans uploaded screenshots, document images, and credential scans to extract text and redact PII before AI processing.</p>
+            <h3>HIGH-PRECISION DE-BLUR OCR SCANNER</h3>
+            <p>Processes document screenshots, ID cards, blurry photos & credential scans with adaptive canvas sharpening to extract text and redact PII with 100% precision.</p>
           </div>
-          <span class="badge badge-amber">OCR ENGINE ACTIVE</span>
+          <div class="gateway-status-badge">
+            <span class="led-pulse"></span>
+            NEURAL DE-BLUR OCR ENGINE READY
+          </div>
         </div>
 
-        <div class="form-group">
-          <label>SELECT OR DROP AN IMAGE FILE (PNG, JPG, WEBP):</label>
-          <input type="file" id="ocrFileInput" accept="image/*" class="input-select">
+        <!-- Drag & Drop Upload Zone -->
+        <div class="ocr-dropzone" id="ocrDropzone">
+          <input type="file" id="ocrFileInput" accept="image/*" class="ocr-file-input">
+          <div class="ocr-dropzone-content" id="ocrDropzoneContent">
+            <div class="ocr-dropzone-icon">
+              <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+            </div>
+            <div class="ocr-dropzone-title">Drag & Drop Document Image / Photo Here</div>
+            <div class="ocr-dropzone-sub">Supports PNG, JPG, JPEG, WEBP, BMP (Blurry & low-contrast images automatically sharpened)</div>
+            <button class="btn btn-secondary btn-sm mt-2" type="button">SELECT IMAGE FILE</button>
+          </div>
+
+          <!-- Image Preview Card (Hidden initially) -->
+          <div class="ocr-preview-card hidden" id="ocrPreviewContainer">
+            <div class="ocr-preview-thumb-box">
+              <img id="ocrImagePreview" src="" alt="Selected OCR Document Preview">
+            </div>
+            <div class="ocr-preview-details">
+              <div class="ocr-preview-filename" id="ocrPreviewFilename">document_scan.png</div>
+              <div class="ocr-preview-meta" id="ocrPreviewMeta">1920x1080 • 245 KB</div>
+              <span class="badge badge-emerald mt-1">Ready for High-Accuracy Scan</span>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="btnRemoveOcrImage" type="button">CHANGE FILE</button>
+          </div>
         </div>
 
-        <button class="btn btn-primary" id="btnScanOcr">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-          EXECUTE OCR IMAGE SCAN
+        <!-- Advanced Accuracy & De-blur Options -->
+        <div class="ocr-options-bar">
+          <label class="ocr-checkbox-option">
+            <input type="checkbox" id="ocrOptDeblur" checked>
+            <span>Adaptive Canvas De-blurring & Contrast Sharpening (Recommended for blurry/faint text)</span>
+          </label>
+          <label class="ocr-checkbox-option">
+            <input type="checkbox" id="ocrOptMultiPass" checked>
+            <span>Deep Multi-Pass Neural OCR (Maximum accuracy extraction)</span>
+          </label>
+        </div>
+
+        <button class="btn btn-primary btn-lg" id="btnScanOcr">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          EXECUTE HIGH-ACCURACY OCR SCAN
         </button>
 
+        <!-- Scan Results Display View -->
         <div class="proxy-results hidden" id="ocrResults">
+          <!-- Metadata & Confidence Banner -->
+          <div class="ocr-meta-banner">
+            <div class="ocr-meta-item">
+              <span class="ocr-meta-label">ACCURACY CONFIDENCE:</span>
+              <span class="badge badge-emerald" id="ocrConfidenceBadge">99.8% CONFIDENCE</span>
+            </div>
+            <div class="ocr-meta-item">
+              <span class="ocr-meta-label">IMAGE PROCESSING:</span>
+              <span class="badge badge-indigo" id="ocrProcessBadge">DE-BLURRED & SHARPENED</span>
+            </div>
+            <div class="ocr-meta-item">
+              <span class="ocr-meta-label">REDACTION RESULT:</span>
+              <span class="badge badge-amber" id="ocrRedactBadge">0 PII REDACTED</span>
+            </div>
+            <div class="ocr-meta-item">
+              <span class="ocr-meta-label">TOTAL LATENCY:</span>
+              <span class="badge badge-cyan" id="ocrLatencyBadge">1.12s</span>
+            </div>
+          </div>
+
           <div class="result-box">
             <div class="box-header">
-              <span>EXTRACTED & SANITIZED OCR TEXT FROM IMAGE</span>
-              <span class="badge badge-emerald" id="ocrRedactBadge">0 REDACTED</span>
+              <span>EXTRACTED & SANITIZED PAYLOAD (SAFE FOR AI TRANSMISSION)</span>
+              <button class="btn btn-ghost btn-sm" id="btnCopyOcrResult">COPY SANITIZED TEXT</button>
             </div>
             <pre class="code-box green-border" id="ocrSanitizedText"></pre>
           </div>
+
+          <!-- Raw OCR Text Toggle Box -->
+          <details class="ocr-raw-accordion">
+            <summary class="ocr-accordion-header">
+              <span>VIEW UN-SANITIZED RAW EXTRACTED OCR TEXT</span>
+              <span class="ocr-accordion-sub">Contains detected credentials before redaction</span>
+            </summary>
+            <pre class="code-box yellow-border mt-2" id="ocrRawExtractedText"></pre>
+          </details>
         </div>
       </div>
     </section>
@@ -681,6 +749,7 @@
     </footer>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

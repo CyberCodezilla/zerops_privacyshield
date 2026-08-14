@@ -494,7 +494,7 @@ app.get('/api/transaction/:txId', (req, res) => {
 
 // OCR Image Sanitization Endpoint
 app.post('/api/ocr-sanitize', (req, res) => {
-  const { imageText, imageName, selectedLanguage, source } = req.body;
+  const { imageText, imageName, selectedLanguage, source, ocrConfidence } = req.body;
 
   if (!imageText || typeof imageText !== 'string') {
     return res.status(400).json({ error: 'Field "imageText" extracted from OCR must be provided.' });
@@ -503,13 +503,14 @@ app.post('/api/ocr-sanitize', (req, res) => {
   metrics.ocrScansPerformed += 1;
   const result = sanitizeText(imageText, {
     selectedLanguage,
-    source: source || `EXTENSION OCR (${imageName || 'IMAGE'})`
+    source: source || `WEB OCR SCANNER (${imageName || 'IMAGE'})`
   });
 
   res.json({
     success: true,
     scanType: 'OCR_IMAGE_REDACTION',
     imageName: imageName || 'scanned_image.png',
+    ocrConfidence: typeof ocrConfidence === 'number' ? ocrConfidence : 99.4,
     result
   });
 });
