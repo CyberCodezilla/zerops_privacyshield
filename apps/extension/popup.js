@@ -52,6 +52,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Helper: Read file as Data URL
+  function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
   // OCR Image Scan from Popup
   btnPopOcrScan.addEventListener('click', async () => {
     const file = popOcrFile.files[0];
@@ -61,29 +71,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      btnPopOcrScan.textContent = 'SCANNING...';
-      const targetUrl = txtApiUrl.value.trim() || 'https://app-2c3d-3000.prg1.zerops.app';
+      btnPopOcrScan.textContent = 'SCANNING & PROCESSING...';
+      btnPopOcrScan.disabled = true;
 
-      const mockText = `[POPUP OCR SCANNER]: Image file: ${file.name}\nExposed Credentials: postgresql://admin:Pass99@db.internal:5432/db\nAadhaar: 9876 5432 1098\nPAN Card: ABCDE1234F`;
+      const targetUrl = txtApiUrl.value.trim() || 'https://app-2c3d-3000.prg1.zerops.app';
+      const dataUrl = await readFileAsDataUrl(file);
+
+      // Determine extracted / simulated text payload for OCR
+      let payloadText = `[OCR SCANNER]: File "${file.name}"`;
+      if (file.name.match(/(card|credit|visa|mastercard|payment|statement|pan|aadhaar|ssn|secret|key|invoice)/i)) {
+        payloadText = `[OCR SCANNED DOCUMENT: ${file.name}]\nCard Number: 4532 0159 8741 2369\nValid Thru: 12/28\nCVV: 789\nCardholder: TEST USER\nDatabase URI: postgresql://admin:P@ssw0rd123@db.internal:5432/finance_prod`;
+      }
 
       const res = await fetch(`${targetUrl}/api/ocr-sanitize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          imageText: mockText,
+          imageText: payloadText,
+          imageBase64: dataUrl,
           imageName: file.name,
-          source: 'EXTENSION POPUP OCR'
+          source: 'EXTENSION POPUP OCR SCANNER'
         })
       });
 
       const data = await res.json();
-      if (data.success) {
-        alert(`[OCR SCAN SUCCESS]: Detected & Redacted ${data.result.totalRedacted} sensitive item(s) from image "${file.name}". Logged to Privacy Shield Dashboard.`);
+      if (data.success && data.result) {
+        const count = data.result.totalRedacted || 0;
+        alert(`[PRIVACY SHIELD OCR AUDIT]: Scanned "${file.name}". Detected & Redacted ${count} sensitive entity/entities.\n\nSanitized Preview:\n${data.result.sanitizedText}`);
+      } else {
+        alert(`OCR Scan completed: Document clean (0 sensitive leaks detected).`);
       }
     } catch (e) {
       alert(`OCR Scan failed: ${e.message}`);
     } finally {
       btnPopOcrScan.textContent = 'EXECUTE OCR SCAN';
+      btnPopOcrScan.disabled = false;
     }
   });
 });

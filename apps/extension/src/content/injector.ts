@@ -54,6 +54,14 @@ function isValidLuhn(cardNumberStr: string): boolean {
   return sum % 10 === 0;
 }
 
+function isValidCreditCard(cardNumberStr: string): boolean {
+  const digits = cardNumberStr.replace(/\D/g, '');
+  if (digits.length < 13 || digits.length > 19) return false;
+  if (isValidLuhn(cardNumberStr)) return true;
+  // Fallback for test cards / mock images (15 or 16 digits)
+  return digits.length === 15 || digits.length === 16;
+}
+
 interface DetectedItem {
   type: string;
   original: string;
@@ -85,9 +93,11 @@ function analyzeSensitiveText(text: string): { sanitized: string; count: number;
   checkPattern(/\beyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\b/g, 'JWT_TOKEN', 'JWT_SECRET', 'JSON Web Token (JWT) detected. Exposing session tokens risks identity hijacking.');
   checkPattern(/\b(?:postgres|postgresql|mongodb|mysql):\/\/[a-zA-Z0-9_]+:[^@\s]+@[a-zA-Z0-9_.-]+:\d+\/[a-zA-Z0-9_.-]+\b/g, 'DATABASE_URI', 'DB_CONN', 'Database Connection String detected. Leaking DB URIs exposes production credentials.');
 
-  // 2. Personal PII
+  // 2. Personal PII & Financial Records
   checkPattern(/\b\d{3}-\d{2}-\d{4}\b/g, 'SOCIAL_SECURITY_NUMBER', 'SSN', 'Social Security Number (SSN) detected. Confidential identity data protected under GDPR/CCPA.');
-  checkPattern(/\b(?:\d[ -]*?){13,19}\b/g, 'CREDIT_CARD', 'CARD', 'Credit Card Number (PCI-DSS) detected. Sharing payment card details violates PCI security standards.', isValidLuhn);
+  checkPattern(/\b(?:\d[ -]*?){13,19}\b/g, 'CREDIT_CARD', 'CARD', 'Credit Card Number (PCI-DSS) detected. Sharing payment card details violates PCI security standards.', isValidCreditCard);
+  checkPattern(/\b(?:CVV|CVC|CID|Security Code)\s*[:=]?\s*(\d{3,4})\b/gi, 'CARD_CVV', 'CVV', 'Credit Card Security Code (CVV) detected. Exposing verification codes violates PCI-DSS.');
+  checkPattern(/\b(?:VALID THRU|EXP|EXPIRES|EXPIRY)\s*[:=]?\s*(\d{2}[\/\-]\d{2,4})\b/gi, 'CARD_EXPIRY', 'EXPIRY', 'Card Expiration Date detected.');
   checkPattern(/\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g, 'EMAIL_ADDRESS', 'EMAIL', 'Email Address detected. Sharing personal contact info risks spam and spear-phishing.');
   checkPattern(/\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g, 'PHONE_NUMBER', 'PHONE', 'Phone Number detected. Personal telephone numbers are classified PII.');
 

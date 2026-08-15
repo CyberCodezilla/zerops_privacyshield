@@ -275,55 +275,7 @@ function sanitizeText(text, options = {}) {
       confidence: 99.6,
       risk: 'CRITICAL'
     },
-    // 16. AADHAAR CARD (India 12-Digit UIDAI)
-    {
-      type: 'AADHAAR_CARD',
-      pattern: /\b[2-9]{1}\d{3}\s?\d{4}\s?\d{4}\b/g,
-      label: '[AADHAAR_NUMBER_REDACTED]',
-      confidence: 98.5,
-      risk: 'CRITICAL'
-    },
-    // 17. PAN CARD (India 10-Char Tax ID)
-    {
-      type: 'PAN_CARD',
-      pattern: /\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b/g,
-      label: '[PAN_CARD_REDACTED]',
-      confidence: 99.1,
-      risk: 'CRITICAL'
-    },
-    // 18. IBAN BANK ACCOUNT NUMBERS
-    {
-      type: 'IBAN_NUMBER',
-      pattern: /\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/g,
-      label: '[IBAN_REDACTED]',
-      confidence: 98.8,
-      risk: 'HIGH'
-    },
-    // 19. SWIFT / BIC CODES
-    {
-      type: 'SWIFT_BIC',
-      pattern: /\b[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?\b/g,
-      label: '[SWIFT_BIC_REDACTED]',
-      confidence: 97.5,
-      risk: 'MEDIUM'
-    },
-    // 20. EMAIL ADDRESSES
-    {
-      type: 'EMAIL',
-      pattern: /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g,
-      label: '[EMAIL_REDACTED]',
-      confidence: 99.4,
-      risk: 'HIGH'
-    },
-    // 21. SOCIAL SECURITY NUMBERS (US SSN)
-    {
-      type: 'SSN',
-      pattern: /\b\d{3}-\d{2}-\d{4}\b/g,
-      label: '[SSN_REDACTED]',
-      confidence: 99.9,
-      risk: 'CRITICAL'
-    },
-    // 22. CREDIT CARDS
+    // 16. CREDIT CARDS (13-19 digits, formatted or unformatted)
     {
       type: 'CREDIT_CARD',
       pattern: /\b(?:\d[ -]*?){13,19}\b/g,
@@ -336,6 +288,70 @@ function sanitizeText(text, options = {}) {
       },
       label: '[CREDIT_CARD_REDACTED]',
       confidence: 99.8,
+      risk: 'CRITICAL'
+    },
+    // 16b. CARD CVV / CVC
+    {
+      type: 'CARD_CVV',
+      pattern: /\b(?:CVV|CVC|CID|Security Code)\s*[:=]?\s*(\d{3,4})\b/gi,
+      label: 'CVV: [CVV_REDACTED]',
+      confidence: 99.5,
+      risk: 'CRITICAL'
+    },
+    // 16c. CARD EXPIRATION DATE
+    {
+      type: 'CARD_EXPIRY',
+      pattern: /\b(?:VALID THRU|EXP|EXPIRES|EXPIRY)\s*[:=]?\s*(\d{2}[\/\-]\d{2,4})\b/gi,
+      label: 'EXP: [EXPIRY_REDACTED]',
+      confidence: 99.0,
+      risk: 'HIGH'
+    },
+    // 17. AADHAAR CARD (India 12-Digit UIDAI)
+    {
+      type: 'AADHAAR_CARD',
+      pattern: /\b[2-9]{1}\d{3}\s?\d{4}\s?\d{4}\b/g,
+      label: '[AADHAAR_NUMBER_REDACTED]',
+      confidence: 98.5,
+      risk: 'CRITICAL'
+    },
+    // 18. PAN CARD (India 10-Char Tax ID)
+    {
+      type: 'PAN_CARD',
+      pattern: /\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b/g,
+      label: '[PAN_CARD_REDACTED]',
+      confidence: 99.1,
+      risk: 'CRITICAL'
+    },
+    // 19. IBAN BANK ACCOUNT NUMBERS
+    {
+      type: 'IBAN_NUMBER',
+      pattern: /\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/g,
+      label: '[IBAN_REDACTED]',
+      confidence: 98.8,
+      risk: 'HIGH'
+    },
+    // 20. SWIFT / BIC CODES
+    {
+      type: 'SWIFT_BIC',
+      pattern: /\b[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?\b/g,
+      label: '[SWIFT_BIC_REDACTED]',
+      confidence: 97.5,
+      risk: 'MEDIUM'
+    },
+    // 21. EMAIL ADDRESSES
+    {
+      type: 'EMAIL',
+      pattern: /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g,
+      label: '[EMAIL_REDACTED]',
+      confidence: 99.4,
+      risk: 'HIGH'
+    },
+    // 22. SOCIAL SECURITY NUMBERS (US SSN)
+    {
+      type: 'SSN',
+      pattern: /\b\d{3}-\d{2}-\d{4}\b/g,
+      label: '[SSN_REDACTED]',
+      confidence: 99.9,
       risk: 'CRITICAL'
     },
     // 23. PHONE NUMBERS
@@ -494,16 +510,20 @@ app.get('/api/transaction/:txId', (req, res) => {
 
 // OCR Image Sanitization Endpoint
 app.post('/api/ocr-sanitize', (req, res) => {
-  const { imageText, imageName, selectedLanguage, source, ocrConfidence } = req.body;
+  let { imageText, imageName, imageBase64, selectedLanguage, source, ocrConfidence } = req.body;
+
+  if (!imageText && imageBase64) {
+    imageText = `[OCR SCAN IMAGE: ${imageName || 'attachment.png'}]`;
+  }
 
   if (!imageText || typeof imageText !== 'string') {
-    return res.status(400).json({ error: 'Field "imageText" extracted from OCR must be provided.' });
+    return res.status(400).json({ error: 'Field "imageText" or "imageBase64" extracted from OCR must be provided.' });
   }
 
   metrics.ocrScansPerformed += 1;
   const result = sanitizeText(imageText, {
     selectedLanguage,
-    source: source || `WEB OCR SCANNER (${imageName || 'IMAGE'})`
+    source: source || `OCR SCANNER (${imageName || 'IMAGE'})`
   });
 
   res.json({

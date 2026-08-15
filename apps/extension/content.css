@@ -256,3 +256,92 @@
   color: #f8fafc;
   border-color: rgba(255, 255, 255, 0.3);
 }
+
+.ps-btn-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  color: #ffffff;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.35);
+}
+
+.ps-btn-danger:hover {
+  background: #dc2626;
+}
+
+/* Floating OCR Scanning HUD Banner */
+.ps-ocr-scanning-hud {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 99999999;
+  background: rgba(9, 13, 22, 0.96);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(16, 185, 129, 0.6);
+  border-radius: 10px;
+  padding: 12px 18px;
+  color: #f8fafc;
+  font-family: 'JetBrains Mono', 'Inter', monospace, sans-serif;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.8), 0 0 24px rgba(16, 185, 129, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  animation: psSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 420px;
+}
+
+@keyframes psSlideIn {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ps-ocr-radar {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #10b981;
+  border-top-color: transparent;
+  animation: psSpin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes psSpin {
+  to { transform: rotate(360deg); }
+}
+
+.ps-ocr-hud-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ps-ocr-hud-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #6ee7b7;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ps-ocr-hud-sub {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+
+.ps-image-preview-extract {
+  background: rgba(4, 7, 13, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: monospace;
+  font-size: 11px;
+  color: #cbd5e1;
+  max-height: 90px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
