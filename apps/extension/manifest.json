@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PrivacyShield — Universal Zero-Trust AI Guard",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "Zero-Trust Real-Time PII & Secret Redaction Guard for ChatGPT, Claude, Gemini, Perplexity, DeepSeek, and custom AI chat interfaces.",
   "action": {
     "default_popup": "popup.html",
@@ -52,7 +52,7 @@
         "https://www.perplexity.ai/*",
         "https://chat.deepseek.com/*"
       ],
-      "js": ["content.js"],
+      "js": ["tesseract.min.js", "content.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
     }
