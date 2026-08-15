@@ -19,6 +19,7 @@
   "author": "CyberCodezilla",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "tesseract.js": "^7.0.0"
   }
 }

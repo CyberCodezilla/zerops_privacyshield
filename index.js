@@ -1,11 +1,20 @@
 const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
+const { createWorker } = require('tesseract.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json({ limit: '10mb' }));
+let ocrWorkerPromise = null;
+async function getOcrWorker() {
+  if (!ocrWorkerPromise) {
+    ocrWorkerPromise = createWorker('eng');
+  }
+  return ocrWorkerPromise;
+}
+
+app.use(express.json({ limit: '20mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // In-memory telemetry & audit ledger
@@ -508,20 +517,44 @@ app.get('/api/transaction/:txId', (req, res) => {
   });
 });
 
-// OCR Image Sanitization Endpoint
-app.post('/api/ocr-sanitize', (req, res) => {
+// OCR Image Sanitization Endpoint with Server-Side Tesseract WASM OCR
+app.post('/api/ocr-sanitize', async (req, res) => {
   let { imageText, imageName, imageBase64, selectedLanguage, source, ocrConfidence } = req.body;
 
-  if (!imageText && imageBase64) {
-    imageText = `[OCR SCAN IMAGE: ${imageName || 'attachment.png'}]`;
+  let extractedRawText = imageText || '';
+
+  if (imageBase64 && typeof imageBase64 === 'string') {
+    try {
+      const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+      const worker = await getOcrWorker();
+      const ocrData = await worker.recognize(buffer);
+      if (ocrData && ocrData.data && ocrData.data.text) {
+        const text = ocrData.data.text.trim();
+        if (text.length > 0) {
+          extractedRawText = (extractedRawText ? extractedRawText + '\n' : '') + text;
+          if (typeof ocrData.data.confidence === 'number') {
+            ocrConfidence = Number(ocrData.data.confidence.toFixed(1));
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[Server OCR Warning]:', err.message);
+    }
   }
 
-  if (!imageText || typeof imageText !== 'string') {
-    return res.status(400).json({ error: 'Field "imageText" or "imageBase64" extracted from OCR must be provided.' });
+  if (!extractedRawText) {
+    extractedRawText = `[OCR SCAN IMAGE: ${imageName || 'attachment.png'}]`;
   }
+
+  // Normalize common OCR digit issues in credit card blocks (e.g. 4532 O159 8741 2369)
+  extractedRawText = extractedRawText.replace(/\b([0-9OlI]{4})[\s\-]([0-9OlI]{4})[\s\-]([0-9OlI]{4})[\s\-]([0-9OlI]{4})\b/g, (m, a, b, c, d) => {
+    const fix = str => str.replace(/[Oo]/g, '0').replace(/[Il]/g, '1');
+    return `${fix(a)} ${fix(b)} ${fix(c)} ${fix(d)}`;
+  });
 
   metrics.ocrScansPerformed += 1;
-  const result = sanitizeText(imageText, {
+  const result = sanitizeText(extractedRawText, {
     selectedLanguage,
     source: source || `OCR SCANNER (${imageName || 'IMAGE'})`
   });
@@ -531,6 +564,7 @@ app.post('/api/ocr-sanitize', (req, res) => {
     scanType: 'OCR_IMAGE_REDACTION',
     imageName: imageName || 'scanned_image.png',
     ocrConfidence: typeof ocrConfidence === 'number' ? ocrConfidence : 99.4,
+    extractedRawText,
     result
   });
 });

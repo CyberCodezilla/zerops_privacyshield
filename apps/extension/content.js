@@ -287,11 +287,27 @@
   }
 
   function removeAttachedFilePreviewElements() {
-    // Attempt to remove file attachments in ChatGPT / Claude DOM
-    const closeButtons = document.querySelectorAll(
-      'button[aria-label*="Remove file"], button[aria-label*="Delete"], button[data-testid*="remove-file"], div[role="button"][aria-label*="Remove"]'
-    );
-    closeButtons.forEach(btn => btn.click());
+    const selectors = [
+      'button[aria-label*="Remove"]',
+      'button[aria-label*="remove"]',
+      'button[aria-label*="Delete"]',
+      'button[aria-label*="delete"]',
+      'button[aria-label*="Dismiss"]',
+      'button[data-testid*="remove"]',
+      'div[role="button"][aria-label*="Remove"]',
+      'div[role="button"][aria-label*="remove"]',
+      '.composer-attachment button',
+      '[data-testid*="attachment"] button'
+    ];
+    selectors.forEach(sel => {
+      document.querySelectorAll(sel).forEach(btn => {
+        try { btn.click(); } catch (e) {}
+      });
+    });
+    // Also clear file inputs
+    document.querySelectorAll('input[type="file"]').forEach(inp => {
+      try { inp.value = ''; } catch (e) {}
+    });
   }
 
   // Threat Detection Modal for Text Prompts
