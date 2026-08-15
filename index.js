@@ -342,7 +342,7 @@ function sanitizeText(text, options = {}) {
     // 20. SWIFT / BIC CODES
     {
       type: 'SWIFT_BIC',
-      pattern: /\b[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?\b/g,
+      pattern: /\b[A-Z]{4}(?:US|GB|IN|DE|FR|JP|CH|SG|HK|AE|CA|AU|NL|ES|IT|SE|NO|DK|FI|PL|BR|ZA|KR|CN|RU|BE|AT|NZ|MX|SA)[A-Z0-9]{2}(?:[A-Z0-9]{3})?\b/g,
       label: '[SWIFT_BIC_REDACTED]',
       confidence: 97.5,
       risk: 'MEDIUM'

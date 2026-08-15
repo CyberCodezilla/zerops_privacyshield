@@ -211,7 +211,7 @@
       { name: 'AADHAAR_CARD', pattern: /\b[2-9]{1}\d{3}\s?\d{4}\s?\d{4}\b/g, label: '[AADHAAR_NUMBER_REDACTED]', risk: 'CRITICAL' },
       { name: 'PAN_CARD', pattern: /\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b/g, label: '[PAN_CARD_REDACTED]', risk: 'CRITICAL' },
       { name: 'IBAN_NUMBER', pattern: /\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/g, label: '[IBAN_REDACTED]', risk: 'HIGH' },
-      { name: 'SWIFT_BIC', pattern: /\b[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?\b/g, label: '[SWIFT_BIC_REDACTED]', risk: 'MEDIUM' },
+      { name: 'SWIFT_BIC', pattern: /\b[A-Z]{4}(?:US|GB|IN|DE|FR|JP|CH|SG|HK|AE|CA|AU|NL|ES|IT|SE|NO|DK|FI|PL|BR|ZA|KR|CN|RU|BE|AT|NZ|MX|SA)[A-Z0-9]{2}(?:[A-Z0-9]{3})?\b/g, label: '[SWIFT_BIC_REDACTED]', risk: 'MEDIUM' },
       { name: 'SSN', pattern: /\b\d{3}-\d{2}-\d{4}\b/g, label: '[SSN_REDACTED]', risk: 'CRITICAL' },
       { name: 'EMAIL', pattern: /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g, label: '[EMAIL_REDACTED]', risk: 'HIGH' },
       { name: 'PHONE', pattern: /\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g, label: '[PHONE_REDACTED]', risk: 'MEDIUM' }
