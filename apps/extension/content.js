@@ -464,10 +464,10 @@
   async function preprocessImage(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         const img = new Image();
         img.crossOrigin = 'anonymous';
-        img.onload = () => {
+        img.onload = async () => {
           try {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
@@ -484,31 +484,22 @@
             ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imageData.data;
-            const len = data.length;
-
-            // Grayscale & Contrast Auto-Stretch
-            let minL = 255, maxL = 0;
-            const luminances = new Float32Array(len / 4);
-
-            for (let i = 0, j = 0; i < len; i += 4, j++) {
-              const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-              luminances[j] = lum;
-              if (lum < minL) minL = lum;
-              if (lum > maxL) maxL = lum;
+            // Execute Stage 1 consolidated pipeline (CLAHE, Skew Correction & Sauvola)
+            if (window.PrivacyShieldImagePipeline && typeof window.PrivacyShieldImagePipeline.preprocessImagePipeline === 'function') {
+              const pipelineRes = await window.PrivacyShieldImagePipeline.preprocessImagePipeline(canvas, {
+                enableCLAHE: true,
+                enableSkewCorrection: true,
+                enableSauvola: true
+              });
+              const outCanvas = pipelineRes.canvas || canvas;
+              resolve({
+                canvas: outCanvas,
+                dataUrl: outCanvas.toDataURL('image/jpeg', 0.88),
+                meta: pipelineRes
+              });
+            } else {
+              resolve({ canvas, dataUrl: canvas.toDataURL('image/jpeg', 0.88) });
             }
-
-            const range = (maxL - minL) || 1;
-            for (let i = 0, j = 0; i < len; i += 4, j++) {
-              const norm = Math.min(255, Math.max(0, ((luminances[j] - minL) / range) * 255));
-              data[i] = norm;
-              data[i + 1] = norm;
-              data[i + 2] = norm;
-            }
-
-            ctx.putImageData(imageData, 0, 0);
-            resolve({ canvas, dataUrl: canvas.toDataURL('image/jpeg', 0.88) });
           } catch (err) {
             reject(err);
           }
