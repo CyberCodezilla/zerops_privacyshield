@@ -635,6 +635,36 @@
       }
     }
 
+    // Phase 3: Ingest External Spans & Contextual NER Entities (Stage 4 Bridge)
+    if (Array.isArray(options.externalSpans)) {
+      options.externalSpans.forEach(span => {
+        if (span && typeof span.start === 'number' && typeof span.end === 'number' && span.end > span.start) {
+          appliedMatches.push(span);
+        }
+      });
+    }
+
+    if (Array.isArray(options.nerEntities)) {
+      options.nerEntities.forEach(ent => {
+        if (ent && typeof ent.start === 'number' && typeof ent.end === 'number' && ent.end > ent.start) {
+          const repLabel = ent.type === 'PER' ? '[PERSON_NAME_REDACTED]' :
+            ent.type === 'LOC' ? '[LOCATION_REDACTED]' :
+            ent.type === 'ORG' ? '[ORGANIZATION_REDACTED]' : '[ENTITY_REDACTED]';
+
+          appliedMatches.push({
+            start: ent.start,
+            end: ent.end,
+            original: ent.text || text.substring(ent.start, ent.end),
+            replacement: repLabel,
+            type: `NER_${ent.type || 'ENTITY'}`,
+            confidence: ent.confidence || 99.0,
+            risk: ent.type === 'PER' ? 'HIGH' : 'MEDIUM',
+            validationMethods: ['TRANSFORMERS_NER', 'INT8_QUANTIZED']
+          });
+        }
+      });
+    }
+
     // Filter overlapping matches: prefer longer span (e.g. Full Database URI over nested email, full key over sub-token)
     appliedMatches.sort((a, b) => (b.end - b.start) - (a.end - a.start));
     const nonOverlapping = [];

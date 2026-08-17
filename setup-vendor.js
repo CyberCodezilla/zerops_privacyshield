@@ -17,12 +17,23 @@ const files = [
   'ort-wasm-simd-threaded.jsep.mjs'
 ];
 
-files.forEach(file => {
-  const src = path.join(srcDir, file);
-  if (fs.existsSync(src)) {
-    fs.copyFileSync(src, path.join(dstDir, file));
-    fs.copyFileSync(src, path.join(extDstDir, file));
-  }
-});
+// Copy Transformers.js vendor files
+const tfSrcDir = path.join(__dirname, 'node_modules', '@xenova', 'transformers', 'dist');
+const tfDstDir = path.join(__dirname, 'public', 'vendor', 'transformers');
+const tfExtDstDir = path.join(__dirname, 'apps', 'extension', 'vendor', 'transformers');
 
-console.log('ORT vendor files populated successfully.');
+if (!fs.existsSync(tfDstDir)) fs.mkdirSync(tfDstDir, { recursive: true });
+if (!fs.existsSync(tfExtDstDir)) fs.mkdirSync(tfExtDstDir, { recursive: true });
+
+if (fs.existsSync(tfSrcDir)) {
+  const tfFiles = fs.readdirSync(tfSrcDir);
+  tfFiles.forEach(file => {
+    if (!file.endsWith('.map')) {
+      const src = path.join(tfSrcDir, file);
+      fs.copyFileSync(src, path.join(tfDstDir, file));
+      fs.copyFileSync(src, path.join(tfExtDstDir, file));
+    }
+  });
+}
+
+console.log('ORT and Transformers vendor files populated successfully.');

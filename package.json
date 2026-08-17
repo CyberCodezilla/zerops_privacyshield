@@ -6,10 +6,12 @@
   "type": "commonjs",
   "scripts": {
     "start": "node index.js",
-    "test": "node test-stage1.js && node test-stage2.js && node test-stage3.js",
+    "test": "node test-stage1.js && node test-stage2.js && node test-stage3.js && node test-stage4.js && node test-stage5.js",
     "test:stage1": "node test-stage1.js",
     "test:stage2": "node test-stage2.js",
-    "test:stage3": "node test-stage3.js"
+    "test:stage3": "node test-stage3.js",
+    "test:stage4": "node test-stage4.js",
+    "test:stage5": "node test-stage5.js"
   },
   "keywords": [
     "ai",
@@ -22,6 +24,7 @@
   "author": "CyberCodezilla",
   "license": "MIT",
   "dependencies": {
+    "@xenova/transformers": "^2.17.2",
     "express": "^4.21.2",
     "onnxruntime-web": "^1.27.0"
   }

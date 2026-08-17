@@ -115,7 +115,16 @@ function crc32(buf) {
 
 // Sync latest scripts to extension directory
 try {
-  const syncFiles = ['image-pipeline.js', 'ocr-worker.js', 'ocr-client.js', 'rule-engine.js'];
+  const syncFiles = [
+    'image-pipeline.js',
+    'ocr-worker.js',
+    'ocr-client.js',
+    'rule-engine.js',
+    'nlp-client.js',
+    'nlp-worker.js',
+    'redaction-ledger.js',
+    'interceptor.js'
+  ];
   syncFiles.forEach(f => {
     const src = path.join(__dirname, 'public', f);
     const dst = path.join(__dirname, 'apps', 'extension', f);

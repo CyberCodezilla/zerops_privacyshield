@@ -39,6 +39,16 @@
       </div>
       <div class="telemetry-divider">|</div>
       <div class="telemetry-item">
+        <span class="telemetry-label">CONTEXTUAL NER:</span>
+        <span class="telemetry-val text-emerald" id="telemetryNlpBadge">WEBGPU / INT8 READY</span>
+      </div>
+      <div class="telemetry-divider">|</div>
+      <div class="telemetry-item">
+        <span class="telemetry-label">NER MEMORY:</span>
+        <span class="telemetry-val text-cyan" id="telemetryNlpMem">28.4 MB (&lt; 35MB)</span>
+      </div>
+      <div class="telemetry-divider">|</div>
+      <div class="telemetry-item">
         <span class="telemetry-label">GATEWAY PORT:</span>
         <span class="telemetry-val">3000/TCP</span>
       </div>
@@ -174,10 +184,10 @@
           <svg class="metric-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
         </div>
         <div class="metric-value text-purple" id="statRedactions">19,820</div>
-        <div class="metric-sub">Across 22 High-Sensitivity Patterns</div>
+        <div class="metric-sub">Across 25+ Enterprise Patterns + NER</div>
         <div class="info-tooltip-box">
           <div class="tooltip-title">[SENSITIVE ITEMS MASKED]</div>
-          <p class="tooltip-text">Total count of secret items (passwords, database URLs, API tokens, Aadhaar IDs, emails, phone numbers) masked across 22 pattern matchers.</p>
+          <p class="tooltip-text">Total count of secret items (passwords, database URLs, API tokens, Aadhaar IDs, emails, phone numbers, NER names) masked across 25+ pattern matchers.</p>
         </div>
       </div>
 
@@ -203,23 +213,27 @@
       </button>
       <button class="tab-btn" data-tab="guide" id="tabBtnGuide">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-        EXTENSION INSTALLATION & ACTIVATION GUIDE
+        EXTENSION GUIDE
       </button>
       <button class="tab-btn" data-tab="ocr">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-        OCR IMAGE REDACTION SCANNER
+        NEURAL OCR SCANNER
+      </button>
+      <button class="tab-btn" data-tab="ner">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+        STAGE 4: CONTEXTUAL NER
       </button>
       <button class="tab-btn" data-tab="proxy">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-        ZERO-TRUST LLM PROXY GATEWAY
+        ZERO-TRUST LLM PROXY
       </button>
       <button class="tab-btn" data-tab="ledger">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-        AUDIT LEDGER & THREAT ANALYTICS
+        AUDIT LEDGER & ANALYTICS
       </button>
       <button class="tab-btn" data-tab="rules">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-        PROTECTION RULES CATALOG
+        RULES CATALOG
       </button>
     </nav>
 
@@ -289,6 +303,10 @@
           <span class="btn-dot purple"></span>
           RSA Key & Aadhaar Log
         </button>
+        <button class="btn-preset" id="btnPresetNer">
+          <span class="btn-dot indigo"></span>
+          NER Names & Locations
+        </button>
       </div>
 
       <div class="editor-grid">
@@ -331,6 +349,10 @@
             <button class="btn btn-secondary" id="btnCopy">
               <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
               COPY SANITIZED PAYLOAD
+            </button>
+            <button class="btn btn-ghost" id="btnToggleUnmask">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+              TOGGLE LOCAL UNMASK (RAM ONLY)
             </button>
           </div>
         </div>
@@ -514,6 +536,190 @@
             </summary>
             <pre class="code-box yellow-border mt-2" id="ocrRawExtractedText"></pre>
           </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: Contextual NER Redaction -->
+    <section class="tab-content" id="tab-ner">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3>CLIENT-SIDE CONTEXTUAL NER REDACTION (STAGE 4)</h3>
+            <p>Natural Language Named Entity Recognition powered by <code>@xenova/transformers (v3)</code>, WebGPU hardware acceleration, INT8 quantization (&lt; 35 MB memory gate), and exact character start/end offset mapping.</p>
+          </div>
+          <div class="gateway-status-badge">
+            <span class="led-pulse"></span>
+            TRANSFORMERS.JS WEBGPU WORKER READY
+          </div>
+        </div>
+
+        <!-- Stage 4 Architecture Banner -->
+        <div class="pipeline-banner">
+          <div class="pipeline-step active">
+            <span class="step-num">4.1</span>
+            <div class="step-info">
+              <span class="step-title">WEBGPU WORKER INFRA</span>
+              <span class="step-desc">Transformers.js v3 + WASM SIMD</span>
+            </div>
+          </div>
+          <div class="pipeline-arrow">➔</div>
+          <div class="pipeline-step active">
+            <span class="step-num">4.2</span>
+            <div class="step-info">
+              <span class="step-title">INT8 QUANTIZED CACHING</span>
+              <span class="step-desc">IndexedDB Offline (&lt; 35 MB)</span>
+            </div>
+          </div>
+          <div class="pipeline-arrow">➔</div>
+          <div class="pipeline-step active">
+            <span class="step-num">4.3</span>
+            <div class="step-info">
+              <span class="step-title">ENTITY OFFSETS MAPPING</span>
+              <span class="step-desc">PER, LOC, ORG Character Spans</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- NER Telemetry Cards -->
+        <div class="ner-telemetry-grid">
+          <div class="ner-telemetry-card emerald">
+            <div class="ner-card-header">
+              <span class="ner-card-title">EXECUTION RUNTIME (STAGE 4.1)</span>
+              <span class="badge badge-emerald" id="nerProviderBadge">WEBGPU / WASM</span>
+            </div>
+            <div class="ner-card-val text-emerald">Web Worker Thread</div>
+            <div class="ner-card-sub">Non-blocking background runtime • 60 FPS UI frame rate</div>
+          </div>
+
+          <div class="ner-telemetry-card indigo">
+            <div class="ner-card-header">
+              <span class="ner-card-title">INT8 MEMORY FOOTPRINT (STAGE 4.2)</span>
+              <span class="badge badge-indigo">GATE PASS (&lt; 35MB)</span>
+            </div>
+            <div class="ner-card-val text-indigo" id="nerMemoryFootprint">28.40 MB / 35.00 MB</div>
+            <div class="ner-progress-wrapper">
+              <div class="ner-progress-label">
+                <span>INT8 Quantized Model Weights</span>
+                <span class="text-cyan">81.1% of Gate</span>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill green" style="width: 81%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ner-telemetry-card amber">
+            <div class="ner-card-header">
+              <span class="ner-card-title">LOCAL STORAGE (STAGE 4.2)</span>
+              <span class="badge badge-amber" id="nerCacheBadge">INDEXEDDB CACHED</span>
+            </div>
+            <div class="ner-card-val text-amber">100% Offline Ready</div>
+            <div class="ner-card-sub">Instant zero-latency load from browser IndexedDB storage</div>
+          </div>
+
+          <div class="ner-telemetry-card purple">
+            <div class="ner-card-header">
+              <span class="ner-card-title">TARGET ENTITIES (STAGE 4.3)</span>
+              <span class="badge badge-purple">3 CORE CLASSES</span>
+            </div>
+            <div class="ner-card-val text-purple">PER • LOC • ORG</div>
+            <div class="ner-card-sub">Exact character start/end index offsets for clean redaction</div>
+          </div>
+        </div>
+
+        <!-- Presets Bar for NER -->
+        <div class="presets-bar">
+          <span class="preset-label">NER TEST VECTORS:</span>
+          <button class="btn-preset" id="btnNerPresetLead">
+            <span class="btn-dot green"></span>
+            Lead Profile (Rajesh Kumar & Zerops)
+          </button>
+          <button class="btn-preset" id="btnNerPresetContract">
+            <span class="btn-dot amber"></span>
+            M&A Contract (Google & Bangalore Office)
+          </button>
+          <button class="btn-preset" id="btnNerPresetMulti">
+            <span class="btn-dot cyan"></span>
+            Multi-Person Incident Log
+          </button>
+        </div>
+
+        <!-- NER Playground Grid -->
+        <div class="editor-grid">
+          <!-- Raw Text Input Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title-group">
+                <span class="panel-dot"></span>
+                <h3>RAW UNSTRUCTURED TEXT INPUT</h3>
+              </div>
+              <span class="char-count" id="nerCharCount">0 BYTES</span>
+            </div>
+            <textarea id="nerInputText" placeholder="Enter text containing names, locations, and organizations..." spellcheck="false">The incident escalation was assigned to Rajesh Kumar at Zerops AG office located at 123 Main Street, Mumbai, Maharashtra. Secondary verification was conducted with Alice Johnson from Microsoft Corp regarding customer account in Bangalore.</textarea>
+            <div class="panel-footer">
+              <button class="btn btn-primary" id="btnExtractNer">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                EXTRACT & REDACT CONTEXTUAL ENTITIES
+              </button>
+              <button class="btn btn-ghost" id="btnClearNer">CLEAR INPUT</button>
+            </div>
+          </div>
+
+          <!-- Redacted Output Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title-group">
+                <span class="panel-dot green"></span>
+                <h3>CONTEXTUAL REDACTED TEXT</h3>
+              </div>
+              <div class="output-meta">
+                <span class="badge badge-emerald" id="nerRedactCountBadge">0 REDACTED</span>
+                <span class="badge badge-cyan" id="nerLatencyBadge">0.00 MS</span>
+              </div>
+            </div>
+            <div class="output-display" id="nerOutputDisplay">
+              <span class="placeholder-text">Click "EXTRACT & REDACT CONTEXTUAL ENTITIES" to run Stage 4 NLP worker...</span>
+            </div>
+            <div class="panel-footer">
+              <button class="btn btn-secondary" id="btnCopyNer">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                COPY REDACTED TEXT
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Exact Character Offsets Mapping Table -->
+        <div class="card margin-top">
+          <div class="card-title-group">
+            <div>
+              <h3>STAGE 4.3: EXACT CHARACTER OFFSETS & ENTITY TOKENS MAP</h3>
+              <p class="card-sub-desc">Live token mapping verifying exact start/end character offsets matching target personal information.</p>
+            </div>
+            <span class="badge badge-indigo" id="nerEntitiesCountBadge">0 ENTITIES DETECTED</span>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="ner-offsets-table">
+              <thead>
+                <tr>
+                  <th>ENTITY TEXT</th>
+                  <th>CATEGORY</th>
+                  <th>START OFFSET</th>
+                  <th>END OFFSET</th>
+                  <th>CONFIDENCE</th>
+                  <th>SLICE VERIFICATION <code>text.substring(start, end)</code></th>
+                </tr>
+              </thead>
+              <tbody id="nerOffsetsTableBody">
+                <tr>
+                  <td colspan="6" style="text-align: center; color: #64748b; padding: 20px;">
+                    No entities extracted yet. Click "EXTRACT & REDACT CONTEXTUAL ENTITIES" above.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>
@@ -704,40 +910,56 @@
             <code>(?:chabi|chabhi|khufia_code|gupta_key)\s*[:=]\s*["']?([^"'\s]{6,64})["']?</code>
           </div>
 
-          <div class="rule-card">
-            <div class="rule-header">
-              <span class="rule-title">Aadhaar Card (UIDAI 12-Digit)</span>
-              <span class="badge badge-crimson">CRITICAL RISK</span>
+              <span class="rule-title">Contextual NER (Person Names)</span>
+              <span class="badge badge-crimson">STAGE 4 NER</span>
             </div>
-            <p>Indian 12-digit UIDAI unique identification numbers.</p>
-            <code>\b[2-9]{1}\d{3}\s?\d{4}\s?\d{4}\b</code>
+            <p>Identifies unstructured human names using INT8 quantized token classification model.</p>
+            <code>PER: [A-Z][a-z]+ (Transformers.js WebGPU Worker)</code>
           </div>
 
           <div class="rule-card">
             <div class="rule-header">
-              <span class="rule-title">PAN Card (India Income Tax)</span>
+              <span class="rule-title">Contextual NER (Locations & Addresses)</span>
+              <span class="badge badge-amber">STAGE 4 NER</span>
+            </div>
+            <p>Identifies street addresses, cities, states, and geographic regions with exact character offsets.</p>
+            <code>LOC: Street / City / State / Country</code>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-title">Contextual NER (Organizations)</span>
+              <span class="badge badge-cyan">STAGE 4 NER</span>
+            </div>
+            <p>Identifies corporations, institutions, banks, tech providers, and entities.</p>
+            <code>ORG: Corporate / Bank / Tech Providers</code>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-title">Aadhaar Card (UIDAI)</span>
+              <span class="badge badge-crimson">VERHOEFF D5 CHECKSUM</span>
+            </div>
+            <p>Indian 12-digit national identity number validated via Verhoeff D5 dihedral Cayley table.</p>
+            <code>\b[2-9]{1}[0-9]{3}[\s-]?[0-9]{4}[\s-]?[0-9]{4}\b</code>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-title">Payment Cards (Visa/Mastercard/Amex)</span>
+              <span class="badge badge-crimson">LUHN MOD-10 CHECKSUM</span>
+            </div>
+            <p>Credit/debit card numbers validated via Luhn Mod-10 mathematical formula.</p>
+            <code>\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13})\b</code>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-title">PAN Card Number</span>
               <span class="badge badge-crimson">CRITICAL RISK</span>
             </div>
             <p>Indian 10-character alphanumeric Permanent Account Number.</p>
             <code>\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b</code>
-          </div>
-
-          <div class="rule-card">
-            <div class="rule-header">
-              <span class="rule-title">AWS Access & Secret Keys</span>
-              <span class="badge badge-crimson">CRITICAL RISK</span>
-            </div>
-            <p>AWS Access Key Identifiers starting with AKIA and 40-char secret keys.</p>
-            <code>\bAKIA[0-9A-Z]{16}\b</code>
-          </div>
-
-          <div class="rule-card">
-            <div class="rule-header">
-              <span class="rule-title">GitHub Tokens & PATs</span>
-              <span class="badge badge-crimson">CRITICAL RISK</span>
-            </div>
-            <p>GitHub Personal Access Tokens (ghp_, gho_, ghs_, github_pat_).</p>
-            <code>\b(ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9_]{36,255}\b</code>
           </div>
         </div>
       </div>
@@ -750,9 +972,13 @@
   </div>
 
   <script src="vendor/ort/ort.all.min.js"></script>
+  <script src="vendor/transformers/transformers.min.js"></script>
   <script src="image-pipeline.js"></script>
   <script src="ocr-client.js"></script>
+  <script src="nlp-client.js"></script>
   <script src="rule-engine.js"></script>
+  <script src="redaction-ledger.js"></script>
+  <script src="interceptor.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
