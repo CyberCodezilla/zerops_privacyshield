@@ -128,10 +128,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Presets
   const PRESETS = {
-    support: `SYSTEM AUDIT REPORT\nCustomer incident ticket #84920\nUser: Alice Smith\nEmail: alice.smith@enterprise.org\nDirect Line: +1 (555) 349-8201\nSSN Verification Token: 987-65-4321\nStatus: Request password reset and account verification.`,
+    support: `SYSTEM AUDIT REPORT\nCustomer incident ticket #84920\nUser: Alice Smith\nEmail: alice.smith@enterprise.org\nDirect Line: +1 (555) 349-8201\nSSN Verification Token: 123-45-6789\nStatus: Request password reset and account verification.`,
     hindi: `SYSTEM LOG (HINDI/HINGLISH INCIDENT):\nDatabase connect karte waqt timeout error aa raha hai.\nCredentials used: postgresql://admin:P@ssw0rd123@db.internal:5432/production_db\nUser email: ramesh.sharma@corp.in\nContact phone: +91 98200 12345\nKrupaya server configurations aur SQL query verify karein.`,
     marathi: `SYSTEM LOG (MARATHI/MINGLISH INCIDENT):\nDatabase connection timeout zhala ahe, server configurations tapaasa.\nConfig String: postgresql://admin:SecretPass99@db.internal:5432/finance_db\nDev Email: sunil.patil@enterprise.mr\nContact: +91 98900 54321\nAPI Key: AKIAIOSFODNN7EXAMPLE\nKrupaya connection strings aani permissions check kara.`,
-    keys: `-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA3f2dM1k7...EXAMPLEDUMMYKEYDATA...\n-----END RSA PRIVATE KEY-----\nDatabase URI: postgresql://admin:P@ssw0rd123@db.internal:5432/prod\nPAN Card ID: ABCDE1234F\nAadhaar Token: 9876 5432 1098\nExposed Credential: AKIAIOSFODNN7EXAMPLE\nGitHub PAT: ghp_1234567890abcdefghijklmnopqrstuvwxyz`
+    keys: `-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA3f2dM1k7...EXAMPLEDUMMYKEYDATA...\n-----END RSA PRIVATE KEY-----\nDatabase URI: postgresql://admin:P@ssw0rd123@db.internal:5432/prod\nPAN Card ID: ABCDE1234F\nAadhaar Token: 2894 7513 9040\nExposed Credential: AKIAIOSFODNN7EXAMPLE\nGitHub PAT: ghp_1234567890abcdefghijklmnopqrstuvwxyz`
   };
 
   // Tab Navigation
