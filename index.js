@@ -98,332 +98,19 @@ function getSystemLanguageInstruction(lang) {
   }
 }
 
-// Shannon Entropy Calculator
-function calculateEntropy(str) {
-  const len = str.length;
-  if (len === 0) return 0;
-  const freq = {};
-  for (let i = 0; i < len; i++) {
-    const char = str[i];
-    freq[char] = (freq[char] || 0) + 1;
-  }
-  let entropy = 0;
-  for (const char in freq) {
-    const p = freq[char] / len;
-    entropy -= p * Math.log2(p);
-  }
-  return entropy;
-}
+// Stage 3: Multi-Attribute Rule Engine Integration
+const {
+  evaluateAndSanitize,
+  calculateShannonEntropy,
+  validateVerhoeff,
+  validateLuhn,
+  RULE_DEFINITIONS
+} = require('./public/rule-engine.js');
 
-function detectHighEntropySpans(text) {
-  const spans = [];
-  const tokens = text.match(/\b[a-zA-Z0-9_\-\.]{16,128}\b/g) || [];
-
-  for (const token of tokens) {
-    if (token.startsWith('[') && token.endsWith(']')) continue;
-    const entropy = calculateEntropy(token);
-    if (entropy > 3.7 && /[0-9]/.test(token) && /[a-zA-Z]/.test(token)) {
-      spans.push({
-        text: token,
-        entropy: entropy.toFixed(2),
-        label: 'HIGH_ENTROPY_SECRET'
-      });
-    }
-  }
-  return spans;
-}
-
-// High-Sensitivity Enterprise PII & Secret Redaction Engine
+// High-Sensitivity Enterprise PII & Secret Redaction Engine (Stage 3 Multi-Attribute Engine)
 function sanitizeText(text, options = {}) {
-  const startTime = process.hrtime();
-  let sanitized = text || '';
-  const redactionCounts = {};
-  const tokensMap = [];
-
-  const rules = [
-    // 1. RSA / OPENSSH / EC / PGP PRIVATE KEYS
-    {
-      type: 'PRIVATE_KEY',
-      pattern: /-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----/gi,
-      label: '[RSA_PRIVATE_KEY_REDACTED]',
-      confidence: 100.0,
-      risk: 'CRITICAL'
-    },
-    // 2. DATABASE CONNECTION URIs
-    {
-      type: 'DATABASE_URI',
-      pattern: /(?:jdbc:)?(?:postgresql|postgres|mysql|mongodb|mongodb\+srv|redis|oracle|mssql):\/\/[a-zA-Z0-9_]+:[^@\s]+@[a-zA-Z0-9_.-]+:\d+\/[a-zA-Z0-9_.-]+/gi,
-      label: '[DATABASE_URI_REDACTED]',
-      confidence: 100.0,
-      risk: 'CRITICAL'
-    },
-    // 3. AWS ACCESS KEY
-    {
-      type: 'AWS_ACCESS_KEY',
-      pattern: /\b(AKIA|ASIA|ABIA|ACCA)[0-9A-Z]{16}\b/g,
-      label: '[AWS_ACCESS_KEY_REDACTED]',
-      confidence: 100.0,
-      risk: 'CRITICAL'
-    },
-    // 4. AWS SECRET KEY (All Label Variations: AWS Secret:, Secret Access Key:, aws_secret_access_key:, etc.)
-    {
-      type: 'AWS_SECRET_KEY',
-      pattern: /(?:aws_secret_access_key|aws_secret_key|aws_secret|Secret Access Key|AWS Secret Key|AWS Secret)\s*[:=]\s*["']?([a-zA-Z0-9\/+=]{32,64})["']?/gi,
-      label: 'AWS Secret: [AWS_SECRET_KEY_REDACTED]',
-      confidence: 100.0,
-      risk: 'CRITICAL'
-    },
-    // 5. OPENAI API KEYS
-    {
-      type: 'OPENAI_API_KEY',
-      pattern: /\bsk-(?:proj-|admin-)?[a-zA-Z0-9_-]{32,128}\b/g,
-      label: '[OPENAI_API_KEY_REDACTED]',
-      confidence: 100.0,
-      risk: 'CRITICAL'
-    },
-    // 6. ANTHROPIC CLAUDE API KEYS
-    {
-      type: 'ANTHROPIC_API_KEY',
-      pattern: /\bsk-ant-api[0-9a-zA-Z-_]{60,128}\b/g,
-      label: '[ANTHROPIC_API_KEY_REDACTED]',
-      confidence: 100.0,
-      risk: 'CRITICAL'
-    },
-    // 7. GITHUB TOKENS & PATs
-    {
-      type: 'GITHUB_TOKEN',
-      pattern: /\b(ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9_]{36,255}\b/g,
-      label: '[GITHUB_TOKEN_REDACTED]',
-      confidence: 100.0,
-      risk: 'CRITICAL'
-    },
-    // 8. SLACK WEBHOOKS & BOT TOKENS
-    {
-      type: 'SLACK_WEBHOOK',
-      pattern: /https:\/\/hooks\.slack\.com\/services\/T[a-zA-Z0-9_]+\/B[a-zA-Z0-9_]+\/[a-zA-Z0-9_]+/g,
-      label: '[SLACK_WEBHOOK_REDACTED]',
-      confidence: 99.9,
-      risk: 'CRITICAL'
-    },
-    {
-      type: 'SLACK_BOT_TOKEN',
-      pattern: /\bxox[baprs]-[a-zA-Z0-9_-]{10,255}\b/g,
-      label: '[SLACK_TOKEN_REDACTED]',
-      confidence: 99.9,
-      risk: 'CRITICAL'
-    },
-    // 9. GCP API KEYS
-    {
-      type: 'GCP_API_KEY',
-      pattern: /\bAIza[0-9A-Za-z-_]{35}\b/g,
-      label: '[GCP_API_KEY_REDACTED]',
-      confidence: 99.7,
-      risk: 'CRITICAL'
-    },
-    // 10. STRIPE KEYS
-    {
-      type: 'STRIPE_KEY',
-      pattern: /\b(sk|pk|rk)_(test|live)_[0-9a-zA-Z]{24,99}\b/g,
-      label: '[STRIPE_KEY_REDACTED]',
-      confidence: 99.8,
-      risk: 'CRITICAL'
-    },
-    // 11. SENDGRID & TWILIO KEYS
-    {
-      type: 'SENDGRID_API_KEY',
-      pattern: /\bSG\.[a-zA-Z0-9_-]{22}\.[a-zA-Z0-9_-]{43}\b/g,
-      label: '[SENDGRID_KEY_REDACTED]',
-      confidence: 99.9,
-      risk: 'CRITICAL'
-    },
-    {
-      type: 'TWILIO_API_KEY',
-      pattern: /\b(AC|SK)[a-f0-9]{32}\b/g,
-      label: '[TWILIO_KEY_REDACTED]',
-      confidence: 99.5,
-      risk: 'CRITICAL'
-    },
-    // 12. GENERIC SECRET / API / APP KEYS & TOKENS
-    {
-      type: 'GENERIC_SECRET_KEY',
-      pattern: /(?:api_secret|client_secret|app_secret|secret_key|private_secret|auth_secret|access_secret)\s*[:=]\s*["']?([a-zA-Z0-9\/+_\-=]{16,128})["']?/gi,
-      label: 'Secret: "[SECRET_KEY_REDACTED]"',
-      confidence: 99.5,
-      risk: 'CRITICAL'
-    },
-    // 13. HARDCODED PASSWORDS & ASSIGNMENT STATEMENTS
-    {
-      type: 'PASSWORD_ASSIGNMENT',
-      pattern: /(?:password|passwd|pass|pwd)\s*[:=]\s*["']([^"'\s]{6,64})["']/gi,
-      label: 'password: "[PASSWORD_REDACTED]"',
-      confidence: 99.2,
-      risk: 'CRITICAL'
-    },
-    // 14. HINGLISH / MINGLISH SENSITIVE JARGON ASSIGNMENTS
-    {
-      type: 'HINGLISH_SECRET_JARGON',
-      pattern: /(?:chabi|chabhi|khufia_code|gupta_key|chupi_key)\s*[:=]\s*["']?([^"'\s]{6,64})["']?/gi,
-      label: 'chabi: "[HINGLISH_SECRET_REDACTED]"',
-      confidence: 98.9,
-      risk: 'CRITICAL'
-    },
-    // 15. JWT & BEARER TOKENS
-    {
-      type: 'JWT_BEARER',
-      pattern: /Bearer\s+eyJ[a-zA-Z0-9_\-\.=]{20,}/gi,
-      label: 'Bearer [JWT_TOKEN_REDACTED]',
-      confidence: 99.6,
-      risk: 'CRITICAL'
-    },
-    // 16. CREDIT CARDS (13-19 digits, formatted or unformatted)
-    {
-      type: 'CREDIT_CARD',
-      pattern: /\b(?:\d[ -]*?){13,19}\b/g,
-      replacement: (match) => {
-        const cleaned = match.replace(/[\s-]/g, '');
-        if (cleaned.length >= 13 && cleaned.length <= 19 && /^\d+$/.test(cleaned)) {
-          return '[CREDIT_CARD_REDACTED]';
-        }
-        return match;
-      },
-      label: '[CREDIT_CARD_REDACTED]',
-      confidence: 99.8,
-      risk: 'CRITICAL'
-    },
-    // 16b. CARD CVV / CVC
-    {
-      type: 'CARD_CVV',
-      pattern: /\b(?:CVV|CVC|CID|Security Code)\s*[:=]?\s*(\d{3,4})\b/gi,
-      label: 'CVV: [CVV_REDACTED]',
-      confidence: 99.5,
-      risk: 'CRITICAL'
-    },
-    // 16c. CARD EXPIRATION DATE
-    {
-      type: 'CARD_EXPIRY',
-      pattern: /\b(?:VALID THRU|EXP|EXPIRES|EXPIRY)\s*[:=]?\s*(\d{2}[\/\-]\d{2,4})\b/gi,
-      label: 'EXP: [EXPIRY_REDACTED]',
-      confidence: 99.0,
-      risk: 'HIGH'
-    },
-    // 17. AADHAAR CARD (India 12-Digit UIDAI)
-    {
-      type: 'AADHAAR_CARD',
-      pattern: /\b[2-9]{1}\d{3}\s?\d{4}\s?\d{4}\b/g,
-      label: '[AADHAAR_NUMBER_REDACTED]',
-      confidence: 98.5,
-      risk: 'CRITICAL'
-    },
-    // 18. PAN CARD (India 10-Char Tax ID)
-    {
-      type: 'PAN_CARD',
-      pattern: /\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b/g,
-      label: '[PAN_CARD_REDACTED]',
-      confidence: 99.1,
-      risk: 'CRITICAL'
-    },
-    // 19. IBAN BANK ACCOUNT NUMBERS
-    {
-      type: 'IBAN_NUMBER',
-      pattern: /\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/g,
-      label: '[IBAN_REDACTED]',
-      confidence: 98.8,
-      risk: 'HIGH'
-    },
-    // 20. SWIFT / BIC CODES
-    {
-      type: 'SWIFT_BIC',
-      pattern: /\b[A-Z]{4}(?:US|GB|IN|DE|FR|JP|CH|SG|HK|AE|CA|AU|NL|ES|IT|SE|NO|DK|FI|PL|BR|ZA|KR|CN|RU|BE|AT|NZ|MX|SA)[A-Z0-9]{2}(?:[A-Z0-9]{3})?\b/g,
-      label: '[SWIFT_BIC_REDACTED]',
-      confidence: 97.5,
-      risk: 'MEDIUM'
-    },
-    // 21. EMAIL ADDRESSES
-    {
-      type: 'EMAIL',
-      pattern: /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g,
-      label: '[EMAIL_REDACTED]',
-      confidence: 99.4,
-      risk: 'HIGH'
-    },
-    // 22. SOCIAL SECURITY NUMBERS (US SSN)
-    {
-      type: 'SSN',
-      pattern: /\b\d{3}-\d{2}-\d{4}\b/g,
-      label: '[SSN_REDACTED]',
-      confidence: 99.9,
-      risk: 'CRITICAL'
-    },
-    // 23. PHONE NUMBERS
-    {
-      type: 'PHONE',
-      pattern: /\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g,
-      label: '[PHONE_REDACTED]',
-      confidence: 96.5,
-      risk: 'MEDIUM'
-    },
-    // 24. IP ADDRESSES
-    {
-      type: 'IP_ADDRESS',
-      pattern: /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g,
-      label: '[IP_REDACTED]',
-      confidence: 97.8,
-      risk: 'LOW'
-    }
-  ];
-
-  rules.forEach((rule) => {
-    let count = 0;
-    if (typeof rule.replacement === 'function') {
-      sanitized = sanitized.replace(rule.pattern, (...args) => {
-        const rep = rule.replacement(...args);
-        if (rep !== args[0]) {
-          count++;
-          tokensMap.push({
-            type: rule.type,
-            original: args[0],
-            replacement: rep,
-            confidence: rule.confidence,
-            risk: rule.risk
-          });
-        }
-        return rep;
-      });
-    } else {
-      sanitized = sanitized.replace(rule.pattern, (match) => {
-        count++;
-        tokensMap.push({
-          type: rule.type,
-          original: match,
-          replacement: rule.label,
-          confidence: rule.confidence,
-          risk: rule.risk
-        });
-        return rule.label;
-      });
-    }
-    if (count > 0) {
-      redactionCounts[rule.type] = count;
-    }
-  });
-
-  const entropySpans = detectHighEntropySpans(sanitized);
-  entropySpans.forEach((span) => {
-    if (!sanitized.includes('[HIGH_ENTROPY_REDACTED]') && !sanitized.includes(span.text)) return;
-    sanitized = sanitized.replace(span.text, '[HIGH_ENTROPY_REDACTED]');
-    redactionCounts['HIGH_ENTROPY_SECRET'] = (redactionCounts['HIGH_ENTROPY_SECRET'] || 0) + 1;
-    tokensMap.push({
-      type: 'HIGH_ENTROPY_SECRET',
-      original: span.text,
-      replacement: '[HIGH_ENTROPY_REDACTED]',
-      confidence: 98.2,
-      risk: 'HIGH'
-    });
-  });
-
-  const diff = process.hrtime(startTime);
-  const timeMs = (diff[0] * 1000 + diff[1] / 1e6).toFixed(2);
-  const totalRedacted = Object.values(redactionCounts).reduce((a, b) => a + b, 0);
+  const evalResult = evaluateAndSanitize(text, options);
+  const { sanitizedText, redactionCounts, tokensMap, totalRedacted, processingTimeMs } = evalResult;
 
   const lang = detectUserLanguage(text, options.selectedLanguage);
   const langInstruction = getSystemLanguageInstruction(lang);
@@ -443,7 +130,7 @@ function sanitizeText(text, options = {}) {
     source: reqSource,
     sourceIp: '192.168.1.' + Math.floor(Math.random() * 200 + 10),
     originalText: text,
-    sanitizedText: sanitized,
+    sanitizedText,
     entitiesFound: Object.keys(redactionCounts).length > 0 ? Object.keys(redactionCounts) : ['CLEAN_SCAN'],
     language: lang,
     riskLevel: maxRisk,
@@ -458,14 +145,14 @@ function sanitizeText(text, options = {}) {
 
   return {
     id: txId,
-    originalLength: text.length,
-    sanitizedText: sanitized,
+    originalLength: text ? text.length : 0,
+    sanitizedText,
     detectedLanguage: lang,
     languageInstruction: langInstruction,
     redactionCounts,
     tokensMap,
     totalRedacted,
-    processingTimeMs: parseFloat(timeMs)
+    processingTimeMs
   };
 }
 

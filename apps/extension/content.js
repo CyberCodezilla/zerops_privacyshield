@@ -177,8 +177,24 @@
     return spans;
   }
 
-  // 24+ High-Sensitivity Local Scanner Rules
+  // Stage 3: Multi-Attribute Rule Engine Integration
   function redactTextLocally(text) {
+    const engine = (typeof PrivacyShieldRuleEngine !== 'undefined') ? PrivacyShieldRuleEngine : (typeof window !== 'undefined' ? window.PrivacyShieldRuleEngine : null);
+    if (engine && typeof engine.evaluateAndSanitize === 'function') {
+      const res = engine.evaluateAndSanitize(text);
+      return {
+        sanitized: res.sanitizedText,
+        count: res.totalRedacted,
+        detectedTokens: res.tokensMap.map(t => ({
+          name: t.type,
+          label: t.replacement,
+          original: t.original,
+          risk: t.risk,
+          validationMethods: t.validationMethods
+        }))
+      };
+    }
+
     let sanitized = text || '';
     let count = 0;
     const detectedTokens = [];
@@ -201,13 +217,9 @@
       { name: 'PASSWORD_ASSIGNMENT', pattern: /(?:password|passwd|pass|pwd)\s*[:=]\s*["']([^"'\s]{6,64})["']/gi, label: 'password: "[PASSWORD_REDACTED]"', risk: 'CRITICAL' },
       { name: 'HINGLISH_SECRET_JARGON', pattern: /(?:chabi|chabhi|khufia_code|gupta_key|chupi_key)\s*[:=]\s*["']?([^"'\s]{6,64})["']?/gi, label: 'chabi: "[HINGLISH_SECRET_REDACTED]"', risk: 'CRITICAL' },
       { name: 'JWT_BEARER', pattern: /Bearer\s+eyJ[a-zA-Z0-9_\-\.=]{20,}/gi, label: 'Bearer [JWT_TOKEN_REDACTED]', risk: 'CRITICAL' },
-      
-      // Payment Cards (16 digit formatted/unformatted, Visa 4xxx, MC 5xxx, Amex 3xxx, Discover 6xxx)
       { name: 'CREDIT_CARD', pattern: /\b(?:\d[ -]*?){13,19}\b/g, label: '[CREDIT_CARD_REDACTED]', risk: 'CRITICAL' },
       { name: 'CARD_CVV', pattern: /\b(?:CVV|CVC|CID|Security Code)\s*[:=]?\s*(\d{3,4})\b/gi, label: 'CVV: [CVV_REDACTED]', risk: 'CRITICAL' },
       { name: 'CARD_EXPIRY', pattern: /\b(?:VALID THRU|EXP|EXPIRES|EXPIRY)\s*[:=]?\s*(\d{2}[\/\-]\d{2,4})\b/gi, label: 'EXP: [EXPIRY_REDACTED]', risk: 'HIGH' },
-
-      // Identity Documents
       { name: 'AADHAAR_CARD', pattern: /\b[2-9]{1}\d{3}\s?\d{4}\s?\d{4}\b/g, label: '[AADHAAR_NUMBER_REDACTED]', risk: 'CRITICAL' },
       { name: 'PAN_CARD', pattern: /\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b/g, label: '[PAN_CARD_REDACTED]', risk: 'CRITICAL' },
       { name: 'IBAN_NUMBER', pattern: /\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/g, label: '[IBAN_REDACTED]', risk: 'HIGH' },
@@ -219,12 +231,9 @@
 
     rules.forEach((rule) => {
       sanitized = sanitized.replace(rule.pattern, (match) => {
-        // Special check for Credit Card: ensure at least 13 digits
         if (rule.name === 'CREDIT_CARD') {
           const digitsOnly = match.replace(/\D/g, '');
-          if (digitsOnly.length < 13 || digitsOnly.length > 19) {
-            return match;
-          }
+          if (digitsOnly.length < 13 || digitsOnly.length > 19) return match;
         }
         count++;
         detectedTokens.push({ name: rule.name, label: rule.label, original: match, risk: rule.risk });
