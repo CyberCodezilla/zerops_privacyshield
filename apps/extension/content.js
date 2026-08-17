@@ -529,24 +529,17 @@
         console.warn('[PrivacyShield] Canvas preprocessing fallback:', err);
       }
 
-      // 1. Execute Client-Side Tesseract WASM OCR
-      const tessObj = (typeof Tesseract !== 'undefined') ? Tesseract : (typeof window !== 'undefined' ? window.Tesseract : null);
-      if (tessObj) {
+      // 1. Execute Client-Side Neural ONNX OCR (DBNet + SVTR with zero-copy ArrayBuffer)
+      const ocrClient = (typeof PrivacyShieldOCRClient !== 'undefined') ? PrivacyShieldOCRClient : (typeof window !== 'undefined' ? window.PrivacyShieldOCRClient : null);
+      if (ocrClient && typeof ocrClient.recognize === 'function') {
         try {
           const imgTarget = processedCanvasInfo ? processedCanvasInfo.canvas : file;
-          let tessResult = null;
-          if (typeof tessObj.recognize === 'function') {
-            tessResult = await tessObj.recognize(imgTarget, 'eng');
-          } else if (typeof tessObj.createWorker === 'function') {
-            const worker = await tessObj.createWorker('eng');
-            tessResult = await worker.recognize(imgTarget);
-            await worker.terminate();
+          const ocrResult = await ocrClient.recognize(imgTarget);
+          if (ocrResult && ocrResult.text) {
+            extractedText = ocrResult.text.trim();
           }
-          if (tessResult && tessResult.data && tessResult.data.text) {
-            extractedText = tessResult.data.text.trim();
-          }
-        } catch (tErr) {
-          console.warn('[PrivacyShield] Tesseract client recognition fallback:', tErr);
+        } catch (oErr) {
+          console.warn('[PrivacyShield] Neural OCR client recognition fallback:', oErr);
         }
       }
 

@@ -52,9 +52,15 @@
         "https://www.perplexity.ai/*",
         "https://chat.deepseek.com/*"
       ],
-      "js": ["image-pipeline.js", "tesseract.min.js", "content.js"],
+      "js": ["image-pipeline.js", "ocr-client.js", "content.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["ocr-worker.js", "models/*", "vendor/*", "icons/*"],
+      "matches": ["<all_urls>"]
     }
   ]
 }

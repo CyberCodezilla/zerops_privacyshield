@@ -6,7 +6,9 @@
   "type": "commonjs",
   "scripts": {
     "start": "node index.js",
-    "test": "node index.js --test"
+    "test": "node test-stage1.js && node test-stage2.js",
+    "test:stage1": "node test-stage1.js",
+    "test:stage2": "node test-stage2.js"
   },
   "keywords": [
     "ai",
@@ -20,6 +22,6 @@
   "license": "MIT",
   "dependencies": {
     "express": "^4.21.2",
-    "tesseract.js": "^7.0.0"
+    "onnxruntime-web": "^1.27.0"
   }
 }

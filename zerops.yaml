@@ -5,7 +5,9 @@ zerops:
       base: nodejs@22
       buildCommands:
         - npm install
+        - node setup-vendor.js
         - node generate-icons.js
+        - node generate-dict.js
         - node create-zip.js
       deployFiles:
         - .

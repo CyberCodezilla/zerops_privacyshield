@@ -7,6 +7,9 @@ venv/
 dist/
 build/
 *.tsbuildinfo
+public/vendor/
+apps/extension/vendor/
+*.wasm
 
 # Environment variables
 .env

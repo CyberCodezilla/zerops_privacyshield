@@ -113,6 +113,18 @@ function crc32(buf) {
   return (crc ^ (-1)) >>> 0;
 }
 
+// Sync latest scripts to extension directory
+try {
+  const syncFiles = ['image-pipeline.js', 'ocr-worker.js', 'ocr-client.js'];
+  syncFiles.forEach(f => {
+    const src = path.join(__dirname, 'public', f);
+    const dst = path.join(__dirname, 'apps', 'extension', f);
+    if (fs.existsSync(src)) fs.copyFileSync(src, dst);
+  });
+} catch (e) {
+  console.warn('[Zip Builder] Sync notice:', e.message);
+}
+
 const source = path.join(__dirname, 'apps', 'extension');
 const target = path.join(__dirname, 'public', 'privacy-shield-extension.zip');
 createZip(source, target);
