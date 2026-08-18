@@ -499,7 +499,7 @@
         </button>
 
         <!-- Scan Results Display View -->
-        <div class="proxy-results hidden" id="ocrResults">
+        <div class="proxy-results hidden" id="ocr-results" data-alias="ocrResults">
           <!-- Metadata & Confidence Banner -->
           <div class="ocr-meta-banner">
             <div class="ocr-meta-item">
@@ -525,7 +525,7 @@
               <span>EXTRACTED & SANITIZED PAYLOAD (SAFE FOR AI TRANSMISSION)</span>
               <button class="btn btn-ghost btn-sm" id="btnCopyOcrResult">COPY SANITIZED TEXT</button>
             </div>
-            <pre class="code-box green-border" id="ocrSanitizedText"></pre>
+            <pre class="code-box green-border" id="sanitized-text-output" data-alias="ocrSanitizedText"></pre>
           </div>
 
           <!-- Raw OCR Text Toggle Box -->

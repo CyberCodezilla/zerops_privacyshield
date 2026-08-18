@@ -61,7 +61,20 @@
 
           this.worker.onmessage = (event) => {
             const data = event.data;
-            if (!data || !data.type) return;
+            if (!data) return;
+
+            // Fix 4: Cold-Start Worker Status Feedback
+            if (data.status === 'LOADING_WEIGHTS' || data.type === 'LOADING_WEIGHTS') {
+              if (typeof this.onProgressCallback === 'function') {
+                this.onProgressCallback(data);
+              }
+              if (typeof window !== 'undefined' && typeof window.updateModalStatus === 'function') {
+                window.updateModalStatus('Initializing local neural model (~16MB)...');
+              }
+              return;
+            }
+
+            if (!data.type) return;
 
             switch (data.type) {
               case 'INIT_COMPLETE':

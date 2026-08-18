@@ -22,6 +22,9 @@ let activeExecutionProvider = 'wasm';
 let characterDict = [];
 let isInitialized = false;
 
+const LOCAL_DET_MODEL = '/models/ch_PP-OCRv4_det_infer.onnx';
+const LOCAL_REC_MODEL = '/models/ch_PP-OCRv4_rec_infer.onnx';
+
 // Global configuration
 const CONFIG = {
   dbName: 'PrivacyShield_NeuralOCR_DB',
@@ -30,14 +33,14 @@ const CONFIG = {
   models: {
     det: {
       name: 'ch_PP-OCRv4_det_infer.onnx',
-      url: '/models/ch_PP-OCRv4_det_infer.onnx',
-      cdnUrl: 'https://cdn.jsdelivr.net/gh/hiroi-sora/PaddleOCR-json@main/models/ch_PP-OCRv4_det_infer.onnx',
+      url: LOCAL_DET_MODEL,
+      cdnUrl: 'https://huggingface.co/Desperado-JT/CH-PP-OCRv4/resolve/main/ch_PP-OCRv4_det_infer.onnx',
       version: 'v4.1.0'
     },
     rec: {
       name: 'ch_PP-OCRv4_rec_infer.onnx',
-      url: '/models/ch_PP-OCRv4_rec_infer.onnx',
-      cdnUrl: 'https://cdn.jsdelivr.net/gh/hiroi-sora/PaddleOCR-json@main/models/ch_PP-OCRv4_rec_infer.onnx',
+      url: LOCAL_REC_MODEL,
+      cdnUrl: 'https://huggingface.co/Desperado-JT/CH-PP-OCRv4/resolve/main/ch_PP-OCRv4_rec_infer.onnx',
       version: 'v4.1.0'
     },
     dict: {
@@ -265,7 +268,12 @@ async function initializeDictionary() {
 // 4. ONNX INFERENCE SESSIONS (DBNet Detection & SVTR Recognition)
 // ---------------------------------------------------------------------------
 
-async function initializeOnnxSessions(preferredProviders = ['webgpu', 'wasm']) {
+async function initializeOnnxSessions(preferredProviders = ['webgpu', 'wasm'], customOptions = {}) {
+  // Fix 4: Add Cold-Start Worker Status Feedback
+  if (typeof self !== 'undefined' && typeof self.postMessage === 'function') {
+    self.postMessage({ status: 'LOADING_WEIGHTS', message: 'Initializing neural OCR engine...' });
+  }
+
   loadOrtLibrary();
 
   if (!ortLoaded || !ortInstance) {
@@ -333,6 +341,20 @@ async function initializeOnnxSessions(preferredProviders = ['webgpu', 'wasm']) {
     cached: detCached && recCached
   };
 }
+
+// PaddleOcr high-level API
+const PaddleOcr = {
+  create: async function(options = {}) {
+    const detModelPath = options.detModelPath || LOCAL_DET_MODEL;
+    const recModelPath = options.recModelPath || LOCAL_REC_MODEL;
+    const providers = options.executionProviders || ['webgpu', 'wasm'];
+
+    CONFIG.models.det.url = detModelPath;
+    CONFIG.models.rec.url = recModelPath;
+
+    return await initializeOnnxSessions(providers, { detPath: detModelPath, recPath: recModelPath });
+  }
+};
 
 // ---------------------------------------------------------------------------
 // 5. PP-OCRv6 DBNet DETECTION ALGORITHM (Stage 2.4)

@@ -36,7 +36,12 @@
     getOrCreatePlaceholder(originalValue, type) {
       if (!originalValue) return '';
 
-      const normalizedType = (type || 'PII').toUpperCase().replace(/^NER_/, '').replace(/_CARD$/, '').replace(/_NUMBER$/, '');
+      let normalizedType = (type || 'SECRET').toUpperCase().replace(/^NER_/, '').replace(/[\s\-]+/g, '_');
+      if (normalizedType === 'CARD_NUMBER') normalizedType = 'CREDIT_CARD';
+      if (normalizedType === 'PER') normalizedType = 'PERSON';
+      if (normalizedType === 'LOC') normalizedType = 'LOCATION';
+      if (normalizedType === 'ORG') normalizedType = 'ORGANIZATION';
+
       const existing = this.originalToPlaceholder.get(originalValue);
       if (existing) {
         return existing;

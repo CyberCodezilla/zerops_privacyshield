@@ -18,6 +18,11 @@ const PORT = process.env.PORT || 3000;
 
 // Stage 5.3: Strict payload limit (64 KB) to reject raw image ingestion or bulk plaintexts at network edge
 app.use(express.json({ limit: '64kb' }));
+
+// 1. Explicitly serve static model binaries
+app.use('/models', express.static(path.join(__dirname, 'public/models'), {
+  fallthrough: false // Ensures missing model files trigger a 404 instead of falling through to catch-all
+}));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // In-memory zero-trust telemetry & audit ledger (metadata receipts only)
@@ -201,27 +206,49 @@ app.post('/api/sanitize', (req, res) => {
   });
 });
 
-// Stage 2 & 5: Minimized OCR Telemetry Receipt
+// Stage 2 & 5: Minimized OCR Telemetry Receipt & Sanitization Result
 app.post('/api/ocr-sanitize', (req, res) => {
   const reqBytes = Buffer.byteLength(JSON.stringify(req.body || {}), 'utf8');
-  const { imageName, tokensCount = 0, executionProvider = 'WEBGPU', ocrConfidence = 99.4 } = req.body;
+  const {
+    sanitizedText,
+    tokensMasked,
+    executionTimeMs,
+    imageName,
+    imageText,
+    tokensCount = 0,
+    executionProvider = 'WEBGPU',
+    ocrConfidence = 99.4,
+    tokens,
+    selectedLanguage,
+    source
+  } = req.body;
+
+  const finalTokens = tokensMasked !== undefined ? tokensMasked : (tokensCount || (tokens ? tokens.length : 0));
+  const finalText = sanitizedText !== undefined ? sanitizedText : (imageText || '');
 
   metrics.ocrScansPerformed += 1;
   metrics.totalRequests += 1;
-  metrics.totalRedactions += tokensCount;
+  metrics.totalRedactions += finalTokens;
 
-  const txId = 'tx_' + crypto.randomBytes(8).toString('hex');
+  const receiptId = `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
+  // Return structure containing the result key expected by app.js
   res.json({
     success: true,
-    receiptId: txId,
+    receiptId: receiptId,
     engine: 'ONNX_PP_OCR_V6_CLIENT',
-    executionProvider,
+    executionProvider: executionProvider || 'WEBGPU',
     imageName: imageName || 'scanned_doc.png',
-    ocrConfidence,
+    ocrConfidence: ocrConfidence || 99.4,
     payloadSizeBytes: reqBytes,
     under2KbGate: reqBytes < 2048,
-    zeroDataRetention: true
+    zeroDataRetention: true,
+    result: {
+      sanitizedText: finalText,
+      tokensMasked: finalTokens,
+      totalRedacted: finalTokens,
+      executionTimeMs: executionTimeMs || 0
+    }
   });
 });
 

@@ -46,8 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const ocrOptDeblur = document.getElementById('ocrOptDeblur');
   const ocrOptMultiPass = document.getElementById('ocrOptMultiPass');
   const btnScanOcr = document.getElementById('btnScanOcr');
-  const ocrResults = document.getElementById('ocrResults');
-  const ocrSanitizedText = document.getElementById('ocrSanitizedText');
+  const ocrResults = document.getElementById('ocr-results') || document.getElementById('ocrResults');
+  const ocrSanitizedText = document.getElementById('sanitized-text-output') || document.getElementById('ocrSanitizedText');
   const ocrRawExtractedText = document.getElementById('ocrRawExtractedText');
   const ocrConfidenceBadge = document.getElementById('ocrConfidenceBadge');
   const ocrProcessBadge = document.getElementById('ocrProcessBadge');
@@ -742,6 +742,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     return {
       modal,
+      updateStatus: (statusMsg) => {
+        const sText = modal.querySelector('#ocrScanningSubtext');
+        if (sText) sText.textContent = statusMsg;
+      },
       updateStage: (stageNum, percent, headline, subtext) => {
         const fill = modal.querySelector('#ocrProgressBarFill');
         const percentText = modal.querySelector('#ocrProgressPercentText');
@@ -782,6 +786,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const startTime = performance.now();
     const progressModal = createOcrProgressModal(file.name);
 
+    // Fix 4: Status updater for worker events
+    function updateModalStatus(statusMsg) {
+      if (progressModal && typeof progressModal.updateStatus === 'function') {
+        progressModal.updateStatus(statusMsg);
+      }
+      const sText = document.querySelector('#ocrScanningSubtext');
+      if (sText) sText.textContent = statusMsg;
+    }
+    window.updateModalStatus = updateModalStatus;
+
     try {
       btnScanOcr.disabled = true;
       btnScanOcr.textContent = 'SCANNING IN PROGRESS...';
@@ -820,6 +834,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (window.PrivacyShieldOCRClient && typeof window.PrivacyShieldOCRClient.recognize === 'function') {
         try {
+          if (typeof window.PrivacyShieldOCRClient.getInstance === 'function') {
+            const clientInst = window.PrivacyShieldOCRClient.getInstance();
+            clientInst.onProgressCallback = (evt) => {
+              if (evt && (evt.status === 'LOADING_WEIGHTS' || evt.type === 'LOADING_WEIGHTS')) {
+                updateModalStatus('Initializing local neural model (~16MB)...');
+              }
+            };
+          }
+
           const ocrResult = await window.PrivacyShieldOCRClient.recognize(enhancedCanvas, {
             detThresh: 0.3,
             unclipRatio: 1.5
@@ -868,21 +891,38 @@ document.addEventListener('DOMContentLoaded', () => {
       const endTime = performance.now();
       const latencySec = ((endTime - startTime) / 1000).toFixed(2);
 
+      const finalRedactedCount = data.result
+        ? (typeof data.result.totalRedacted === 'number' ? data.result.totalRedacted : (data.result.tokensMasked || 0))
+        : 0;
+
       progressModal.updateStage(
         4, 100,
         'Sanitization Complete!',
-        `Processed "${file.name}" with ${data.result ? data.result.totalRedacted : 0} redactions.`
+        `Processed "${file.name}" with ${finalRedactedCount} redactions.`
       );
       await new Promise(r => setTimeout(r, 250));
       progressModal.close();
 
+      // Fix 2 & Contract verification: Unhide #ocr-results and display data.result.sanitizedText
       if (data.success && data.result) {
-        if (ocrResults) ocrResults.classList.remove('hidden');
-        if (ocrSanitizedText) ocrSanitizedText.innerHTML = renderHighlightedText(data.result.sanitizedText);
+        const ocrResultsContainer = document.getElementById('ocr-results') || document.getElementById('ocrResults') || ocrResults;
+        if (ocrResultsContainer) {
+          ocrResultsContainer.classList.remove('hidden');
+          ocrResultsContainer.style.display = 'block';
+        }
+
+        const sanitizedOutput = document.getElementById('sanitized-text-output') || document.getElementById('ocrSanitizedText') || ocrSanitizedText;
+        if (sanitizedOutput) {
+          sanitizedOutput.textContent = data.result.sanitizedText;
+          if (typeof renderHighlightedText === 'function') {
+            sanitizedOutput.innerHTML = renderHighlightedText(data.result.sanitizedText);
+          }
+        }
+
         if (ocrRawExtractedText) ocrRawExtractedText.textContent = extractedText;
         if (ocrConfidenceBadge) ocrConfidenceBadge.textContent = `${ocrConfidence}% CONFIDENCE (${execProvider})`;
         if (ocrProcessBadge) ocrProcessBadge.textContent = shouldDeblur ? 'STAGE 1 DE-BLURRED & SHARPENED' : 'STANDARD NEURAL';
-        if (ocrRedactBadge) ocrRedactBadge.textContent = `${data.result.totalRedacted} PII REDACTED`;
+        if (ocrRedactBadge) ocrRedactBadge.textContent = `${finalRedactedCount} PII REDACTED`;
         if (ocrLatencyBadge) ocrLatencyBadge.textContent = `${latencySec}s (${ocrLatency > 0 ? ocrLatency + 'ms engine' : '<150ms'})`;
 
         updateStats();
