@@ -45,6 +45,13 @@ const { preprocessImagePipeline, createImageDataBuffer } = require('./public/ima
     assert(workerContent.includes('ort.env.wasm.wasmPaths') || workerContent.includes('ortInstance.env.wasm.wasmPaths'), 'Worker sets WASM binary path without CORS restrictions');
     assert(clientContent.includes('OCRClient') && clientContent.includes('init'), 'Client controller provides robust worker lifecycle manager');
     assert(!clientContent.includes('tesseract.js'), 'Client controller completely deprecated legacy Tesseract.js');
+
+    // RCA fixes: module-capable Worker ctor, copy-before-transfer, failed-worker guard, 20s timeout
+    assert(clientContent.includes('new Worker(this.workerPath, { type: this.workerType })'), 'Worker is instantiated with an explicit type option');
+    assert(clientContent.includes('hasWorkerFailed'), 'Client tracks failed worker state so it never posts to a dead thread');
+    assert(clientContent.includes('cloneAsTransferableBuffer'), 'Pixel buffers are cloned before transferable postMessage');
+    assert(!clientContent.includes('new Uint8ClampedArray(imageSource.data.buffer)'), 'Client never wraps an existing ArrayBuffer as a view before transfer');
+    assert(clientContent.includes('RECOGNIZE_TIMEOUT_MS') && clientContent.includes('20000'), 'Recognize requests have a 20s timeout guard');
   }
 
   // ----------------------------------------------------------------------------

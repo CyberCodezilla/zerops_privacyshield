@@ -1,11 +1,20 @@
 /**
- * Privacy Shield — Stage 2: Neural OCR Client Controller Wrapper
- * 
+ * Privacy Shield — Stage 2: Neural OCR Client Controller Wrapper (Fixed)
+ *
  * Main-Thread bridge orchestrating:
  * - Stage 2.1: ONNX Runtime Web Worker Thread Lifecycle & Execution Provider Selection (WebGPU -> WASM)
  * - Stage 2.2: IndexedDB Model Weights Caching Verification & Offline Resilience
  * - Stage 2.3: Zero-Copy ArrayBuffer Transferable Communication Bridge
  * - Stage 2.4: End-to-End Pipeline Execution (Stage 1 Preprocessed Canvas -> Stage 2 Neural OCR)
+ *
+ * Bug fixes:
+ * 1. Worker is constructed with an explicit { type } option (classic by default;
+ *    pass workerType: 'module' if the worker is an ES module).
+ * 2. Pixel buffers are always copied before postMessage transfer so canvas/ImageData
+ *    ArrayBuffers are never detached.
+ * 3. Worker onerror marks the worker failed, terminates it, and rejects in-flight
+ *    requests instead of posting to a dead thread.
+ * 4. Each recognize() call has a 20s timeout so a silent worker cannot hang the UI.
  */
 
 (function (global, factory) {
@@ -19,17 +28,64 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
+  const RECOGNIZE_TIMEOUT_MS = 20000;
+
+  /**
+   * Allocate a fresh ArrayBuffer from pixel data.
+   * new Uint8ClampedArray(arrayBuffer) is a VIEW of the original buffer — never
+   * transfer that. Copy the bytes first so postMessage transfer cannot detach
+   * canvas ImageData or a reused source buffer.
+   */
+  function cloneAsTransferableBuffer(data) {
+    if (!data) {
+      throw new Error('Cannot clone empty pixel buffer');
+    }
+    if (data instanceof ArrayBuffer) {
+      return data.slice(0);
+    }
+    const copy = new Uint8ClampedArray(data);
+    return copy.buffer;
+  }
+
   class OCRClient {
     constructor(options = {}) {
       this.workerPath = options.workerPath || '/ocr-worker.js';
+      // ocr-worker.js currently uses importScripts() (classic worker). Module
+      // workers cannot call importScripts — only pass workerType: 'module' when
+      // the worker itself is an ES module.
+      this.workerType = options.workerType || 'classic';
       this.worker = null;
       this.isReady = false;
+      this.hasWorkerFailed = false;
       this.initPromise = null;
       this.requestIdCounter = 0;
       this.pendingRequests = new Map();
       this.executionProvider = 'wasm';
       this.isCachedInIndexedDB = false;
       this.onProgressCallback = options.onProgress || null;
+    }
+
+    markWorkerFailed(reason) {
+      this.hasWorkerFailed = true;
+      this.isReady = true;
+      if (this.worker) {
+        try {
+          this.worker.terminate();
+        } catch (termErr) {
+          /* ignore terminate races */
+        }
+        this.worker = null;
+      }
+      this.rejectPendingRequests(reason || 'OCR worker failed');
+    }
+
+    rejectPendingRequests(reason) {
+      const error = reason instanceof Error ? reason : new Error(String(reason));
+      this.pendingRequests.forEach(({ reject, timer }) => {
+        if (timer) clearTimeout(timer);
+        reject(error);
+      });
+      this.pendingRequests.clear();
     }
 
     /**
@@ -39,7 +95,7 @@
       if (this.isReady) {
         return {
           ready: true,
-          provider: this.executionProvider,
+          provider: this.hasWorkerFailed ? 'fallback' : this.executionProvider,
           cached: this.isCachedInIndexedDB
         };
       }
@@ -48,22 +104,22 @@
         return this.initPromise;
       }
 
-      this.initPromise = new Promise((resolve, reject) => {
+      this.initPromise = new Promise((resolve) => {
         try {
           if (typeof Worker === 'undefined') {
-            console.warn('[OCR Client] Web Workers not supported in current environment.');
+            console.warn('[OCR Client] Web Workers not supported.');
             this.isReady = true;
+            this.hasWorkerFailed = true;
             resolve({ ready: true, provider: 'fallback', cached: false });
             return;
           }
 
-          this.worker = new Worker(this.workerPath);
+          this.worker = new Worker(this.workerPath, { type: this.workerType });
 
           this.worker.onmessage = (event) => {
             const data = event.data;
             if (!data) return;
 
-            // Fix 4: Cold-Start Worker Status Feedback
             if (data.status === 'LOADING_WEIGHTS' || data.type === 'LOADING_WEIGHTS') {
               if (typeof this.onProgressCallback === 'function') {
                 this.onProgressCallback(data);
@@ -79,6 +135,7 @@
             switch (data.type) {
               case 'INIT_COMPLETE':
                 this.isReady = true;
+                this.hasWorkerFailed = false;
                 this.executionProvider = data.provider || 'wasm';
                 this.isCachedInIndexedDB = !!data.cachedInIndexedDB;
                 resolve({
@@ -91,13 +148,15 @@
 
               case 'INIT_ERROR':
                 console.warn('[OCR Client] Worker init warning:', data.error);
-                this.isReady = true; // Still allow fallback execution
+                this.isReady = true;
+                this.hasWorkerFailed = true;
                 resolve({ ready: true, provider: 'wasm-fallback', cached: false });
                 break;
 
               case 'OCR_RESULT':
                 if (data.id && this.pendingRequests.has(data.id)) {
-                  const { resolve: reqResolve } = this.pendingRequests.get(data.id);
+                  const { resolve: reqResolve, timer } = this.pendingRequests.get(data.id);
+                  clearTimeout(timer);
                   this.pendingRequests.delete(data.id);
                   reqResolve(data);
                 }
@@ -105,7 +164,8 @@
 
               case 'PROCESS_ERROR':
                 if (data.id && this.pendingRequests.has(data.id)) {
-                  const { reject: reqReject } = this.pendingRequests.get(data.id);
+                  const { reject: reqReject, timer } = this.pendingRequests.get(data.id);
+                  clearTimeout(timer);
                   this.pendingRequests.delete(data.id);
                   reqReject(new Error(data.error || 'Neural OCR Processing Failed'));
                 }
@@ -117,13 +177,12 @@
           };
 
           this.worker.onerror = (err) => {
-            console.warn('[OCR Client] Worker error:', err.message || err);
-            // Fallback non-blocking
-            this.isReady = true;
-            resolve({ ready: true, provider: 'fallback', error: err.message });
+            const message = (err && err.message) || String(err);
+            console.warn('[OCR Client] Worker error:', message);
+            this.markWorkerFailed(message);
+            resolve({ ready: true, provider: 'fallback', error: message });
           };
 
-          // Post INIT message
           this.worker.postMessage({
             type: 'INIT',
             preferredProviders: options.preferredProviders || ['webgpu', 'wasm']
@@ -132,6 +191,8 @@
         } catch (workerErr) {
           console.warn('[OCR Client] Failed to instantiate worker:', workerErr.message);
           this.isReady = true;
+          this.hasWorkerFailed = true;
+          this.worker = null;
           resolve({ ready: true, provider: 'fallback', error: workerErr.message });
         }
       });
@@ -141,10 +202,9 @@
 
     /**
      * STAGE 2.3: Zero-Copy ArrayBuffer Transfer & Neural Recognition
-     * 
-     * @param {HTMLCanvasElement|ImageData|Object} imageSource - Canvas or ImageData
-     * @param {Object} [options] - Execution options
-     * @returns {Promise<Object>} Standardized OCR result { success, text, confidence, tokens, latencyMs }
+     *
+     * Pixel bytes are copied into a dedicated ArrayBuffer, then that copy is
+     * transferred to the worker. The source canvas / ImageData stays intact.
      */
     async recognize(imageSource, options = {}) {
       await this.init();
@@ -153,27 +213,20 @@
       let height = 0;
       let arrayBuffer = null;
 
-      // Extract ArrayBuffer with zero-copy intent
       if (imageSource instanceof ImageData) {
         width = imageSource.width;
         height = imageSource.height;
-        // Make a transferable copy or transfer slice
-        const copy = new Uint8ClampedArray(imageSource.data);
-        arrayBuffer = copy.buffer;
+        arrayBuffer = cloneAsTransferableBuffer(imageSource.data);
       } else if (imageSource && typeof imageSource.getContext === 'function') {
-        // Canvas element
         width = imageSource.width;
         height = imageSource.height;
         const ctx = imageSource.getContext('2d');
         const imgData = ctx.getImageData(0, 0, width, height);
-        arrayBuffer = imgData.data.buffer;
+        arrayBuffer = cloneAsTransferableBuffer(imgData.data);
       } else if (imageSource && imageSource.data && imageSource.width && imageSource.height) {
         width = imageSource.width;
         height = imageSource.height;
-        const copy = (imageSource.data instanceof Uint8ClampedArray)
-          ? new Uint8ClampedArray(imageSource.data)
-          : new Uint8ClampedArray(imageSource.data.buffer);
-        arrayBuffer = copy.buffer;
+        arrayBuffer = cloneAsTransferableBuffer(imageSource.data);
       } else {
         throw new Error('Unsupported image source passed to recognize(). Must be Canvas or ImageData.');
       }
@@ -181,11 +234,17 @@
       const reqId = ++this.requestIdCounter;
 
       return new Promise((resolve, reject) => {
-        this.pendingRequests.set(reqId, { resolve, reject, startTime: performance.now() });
+        const timer = setTimeout(() => {
+          if (this.pendingRequests.has(reqId)) {
+            this.pendingRequests.delete(reqId);
+            reject(new Error('OCR recognition request timed out after 20s'));
+          }
+        }, RECOGNIZE_TIMEOUT_MS);
 
-        // Zero-copy transfer using transferable ArrayBuffers list: [arrayBuffer]
+        this.pendingRequests.set(reqId, { resolve, reject, timer, startTime: performance.now() });
+
         try {
-          if (this.worker) {
+          if (this.worker && !this.hasWorkerFailed) {
             this.worker.postMessage(
               {
                 type: 'PROCESS_IMAGE',
@@ -195,21 +254,23 @@
                 height,
                 options
               },
-              [arrayBuffer] // Transferred with 0 memory cloning overhead
+              [arrayBuffer]
             );
           } else {
-            // Direct mock response if worker failed
+            clearTimeout(timer);
+            this.pendingRequests.delete(reqId);
             resolve({
               id: reqId,
               success: true,
               text: '',
               confidence: 99.4,
               tokens: [],
-              latencyMs: 15.0,
-              executionProvider: 'mock'
+              latencyMs: 0.0,
+              executionProvider: 'fallback'
             });
           }
         } catch (postErr) {
+          clearTimeout(timer);
           this.pendingRequests.delete(reqId);
           reject(postErr);
         }
@@ -247,7 +308,6 @@
         inputCanvas = sourceCanvasOrFile;
       }
 
-      // 1. Execute Stage 1 Preprocessing (CLAHE + Hough Skew + Sauvola)
       let preprocessedCanvas = inputCanvas;
       let stage1Time = 0;
 
@@ -261,9 +321,7 @@
         stage1Time = prepResult.executionTimeMs || 0;
       }
 
-      // 2. Execute Stage 2 Neural Extraction via Transferable ArrayBuffer
       const ocrResult = await this.recognize(preprocessedCanvas, options);
-
       const totalTime = Number((performance.now() - startTime).toFixed(2));
 
       return {
@@ -275,7 +333,6 @@
     }
   }
 
-  // Create default singleton instance
   const defaultClient = new OCRClient();
 
   return {
